@@ -1174,22 +1174,9 @@ export default function App() {
       updatePayload.photos = [data.cover, ...nextPhotos];
     }
 
-    // Chiediamo esplicitamente l'id aggiornato: se RLS blocca l'UPDATE,
-    // Supabase può restituire error=null ma 0 righe modificate.
-    const { data: updatedRows, error } = await supabase
-      .from("recipes")
-      .update(updatePayload)
-      .eq("id", recipeId)
-      .select("id");
-
+    const { error } = await supabase.from("recipes").update(updatePayload).eq("id", recipeId);
     if (error) {
-      const msg = `Salvataggio non riuscito: ${error.message || "errore Supabase"}`;
-      setLoadError(msg);
-      return { ok:false, error:msg };
-    }
-
-    if (!updatedRows || updatedRows.length === 0) {
-      const msg = "Supabase non ha aggiornato la ricetta. È molto probabile che manchi la policy RLS UPDATE sulla tabella recipes.";
+      const msg = error.message || "Non riesco a salvare le modifiche.";
       setLoadError(msg);
       return { ok:false, error:msg };
     }
