@@ -22,7 +22,7 @@ export async function onRequestPost(context) {
     }
 
     const body = {
-      app_id: env.ONESIGNAL_APP_ID,
+      app_id: env.ONESIGNAL_APP_ID.trim(),
       headings: { it: "Nuovo messaggio nel ricettario", en: "New message" },
       contents: { it: text, en: text },
       included_segments: ["Subscribed Users"],
@@ -36,7 +36,7 @@ export async function onRequestPost(context) {
       method: "POST",
       headers: {
         "Content-Type": "application/json; charset=utf-8",
-        "Authorization": `Basic ${env.ONESIGNAL_REST_API_KEY}`,
+        "Authorization": `Basic ${env.ONESIGNAL_REST_API_KEY.trim()}`,
       },
       body: JSON.stringify(body),
     });
