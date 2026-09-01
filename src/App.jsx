@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react"; 
 import { supabase } from "./supabaseClient.js";
 
 const ONESIGNAL_APP_ID = "ef0dde25-440e-4a00-b86b-7f686aa31c4c";
