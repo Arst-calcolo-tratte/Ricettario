@@ -1156,15 +1156,37 @@ export default function App() {
   }
 
   async function updateRecipe(recipeId, data) {
-    const { data: updated, error } = await supabase.from("recipes").update({
+    // Non chiediamo il record aggiornato con .select().single(): con Supabase RLS
+    // un UPDATE può essere consentito anche quando la SELECT di ritorno non lo è.
+    // In quel caso .select().single() faceva sembrare che il salvataggio non fosse avvenuto.
+    const current = recipes.find(r => r.id === recipeId);
+    if (!current) return { ok:false, error:"Ricetta non trovata." };
+
+    const nextPhotos = Array.isArray(current.photos) ? current.photos : [];
+    const updatePayload = {
       title: data.title, subtitle: data.subtitle, time: data.time, base_servings: data.baseServings,
       category: data.category, cover: data.cover, tags: data.tags, ingredients: data.ingredients, steps: data.steps,
-    }).eq("id", recipeId).select().single();
-    if (error || !updated) { const msg = error?.message || "Non riesco a salvare le modifiche. Verifica anche le autorizzazioni di Supabase (RLS)."; setLoadError(msg); return { ok:false, error:msg }; }
-    setRecipes(prev => prev.map(r => r.id === recipeId ? rowToRecipe({ ...updated, photos: r.photos }) : r));
+    };
+
+    // Se l'utente ha scelto una vera foto, manteniamola anche nella galleria.
+    // Questo evita che una copertina personalizzata venga persa nelle modifiche successive.
+    if (isCustomCover(data.cover) && !nextPhotos.includes(data.cover)) {
+      updatePayload.photos = [data.cover, ...nextPhotos];
+    }
+
+    const { error } = await supabase.from("recipes").update(updatePayload).eq("id", recipeId);
+    if (error) {
+      const msg = error.message || "Non riesco a salvare le modifiche.";
+      setLoadError(msg);
+      return { ok:false, error:msg };
+    }
+
+    const nextRecipe = { ...current, ...data, photos: updatePayload.photos ?? nextPhotos };
+    setRecipes(prev => prev.map(r => r.id === recipeId ? nextRecipe : r));
     setEditingRecipeId(null);
     setSelectedId(recipeId);
     setView("detail");
+    setLoadError("");
     return { ok:true };
   }
 
