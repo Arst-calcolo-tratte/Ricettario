@@ -836,15 +836,27 @@ function AddRecipePanel({ onClose, onSave, onSaveMany, initialRecipe = null, onU
     if (cleanSteps.length === 0) { setError("Aggiungi almeno un passaggio."); return; }
     dbg("3/6 Validazione superata");
     setError("");
-    const payload = {
-      title: title.trim(), subtitle: subtitle.trim(), time: time.trim(), baseServings: parseInt(baseServings, 10) || 4, category, cover,
-      tags: tagsText.split(",").map((t) => t.trim()).filter(Boolean),
-      ingredients: cleanIngredients.map((r) => ({ name: r.name.trim(), amount: parseFloat(r.amount) || 0, unit: r.unit.trim() || null })),
-      steps: cleanSteps.map((r) => ({ text: r.text.trim(), seconds: r.minutes ? parseInt(r.minutes, 10) * 60 : null })),
-    };
     setSaving(true);
     dbg(editing ? "4/6 Chiamo onUpdate()" : "4/6 Chiamo onSave()");
     try {
+      const payload = {
+        title: String(title ?? "").trim(),
+        subtitle: String(subtitle ?? "").trim(),
+        time: String(time ?? "").trim(),
+        baseServings: parseInt(baseServings, 10) || 4,
+        category,
+        cover,
+        tags: (Array.isArray(tagsText) ? tagsText : String(tagsText ?? "").split(",")).map((t) => String(t ?? "").trim()).filter(Boolean),
+        ingredients: cleanIngredients.map((r) => ({
+          name: String(r.name ?? "").trim(),
+          amount: parseFloat(r.amount) || 0,
+          unit: r.unit == null ? null : String(r.unit).trim() || null,
+        })),
+        steps: cleanSteps.map((r) => ({
+          text: String(r.text ?? "").trim(),
+          seconds: r.minutes ? parseInt(r.minutes, 10) * 60 : null,
+        })),
+      };
       const result = editing ? await onUpdate(payload) : await onSave(payload);
       dbg(`5/6 onUpdate/onSave ha risposto: ${JSON.stringify(result)}`);
       if (result && result.ok === false) setError(result.error || "Non riesco a salvare le modifiche.");
