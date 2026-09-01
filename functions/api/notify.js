@@ -11,7 +11,6 @@ export async function onRequestPost(context) {
 
     const record = payload.record || payload.new || {};
     const text = record.text;
-    const deviceId = record.device_id;
 
     if (!text) {
       return new Response("Messaggio mancante", { status: 400 });
@@ -28,25 +27,4 @@ export async function onRequestPost(context) {
       included_segments: ["Subscribed Users"],
     };
 
-    if (deviceId) {
-      body.filters = [{ field: "tag", key: "device_id", relation: "!=", value: deviceId }];
-    }
-
     const response = await fetch("https://onesignal.com/api/v1/notifications", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json; charset=utf-8",
-        "Authorization": `Basic ${env.ONESIGNAL_REST_API_KEY.trim()}`,
-      },
-      body: JSON.stringify(body),
-    });
-
-    const resultText = await response.text();
-    return new Response(resultText, {
-      status: response.status,
-      headers: { "Content-Type": "application/json" },
-    });
-  } catch (err) {
-    return new Response("Errore interno: " + (err && err.message ? err.message : String(err)), { status: 500 });
-  }
-}
