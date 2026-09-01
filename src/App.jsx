@@ -643,7 +643,7 @@ function RecipeDetail({ recipe, onBack, onAddPhoto, onSetCover, onDeletePhoto, o
       </div>
       <label className="rc-btn" style={{ position:"absolute", left:12, bottom:12, display:"inline-flex", alignItems:"center", gap:6, padding:"8px 11px", borderRadius:13, border:`2px solid ${PALETTE.ink}`, background:"rgba(255,255,255,.95)", color:PALETTE.ink, fontSize:11, fontWeight:800, cursor:"pointer", boxShadow:"3px 3px 0 rgba(42,29,16,.55)" }}>
         <Icon name="image" size={14}/> {recipe.photos.length ? "Cambia copertina" : "Aggiungi copertina"}
-        <input type="file" accept="image/*" style={{display:"none"}} onChange={(e)=>{ const f=e.target.files?.[0]; if(!f) return; const r=new FileReader(); r.onload=()=>onAddPhoto(r.result, true); r.readAsDataURL(f); e.target.value=""; }} />
+        <input type="file" accept="image/*" style={{display:"none"}} onChange={(e)=>{ const f=e.target.files?.[0]; if(!f) return; const r=new FileReader(); r.onload=()=>onAddPhoto(recipe.id, r.result, true); r.readAsDataURL(f); e.target.value=""; }} />
       </label>
     </div>
     <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}><div><h2 className="rc-display" style={{ fontSize: 29, fontWeight: 700, color: PALETTE.ink, margin: "0 0 3px" }}>{recipe.title}</h2><p className="rc-display-i" style={{ fontSize: 15, color: PALETTE.inkSoft, margin: 0 }}>{recipe.subtitle || "Una ricetta da tenere a portata di mano."}</p></div><span style={{ flexShrink: 0, fontSize: 10, fontWeight: 800, color: "#fff", background: color, padding: "6px 9px", borderRadius: 12, border: `2px solid ${PALETTE.ink}` }}>{(CATEGORIES.find(c => c.id === recipe.category)?.label || recipe.category).toUpperCase()}</span></div>
@@ -842,8 +842,9 @@ function AddRecipePanel({ onClose, onSave, onSaveMany, initialRecipe = null, onU
       const result = editing ? await onUpdate(payload) : await onSave(payload);
       if (result && result.ok === false) setError(result.error || "Non riesco a salvare le modifiche.");
       else if (result === false) setError("Non riesco a salvare le modifiche.");
+      else if (editing) setError("Salvataggio completato.");
     } catch (e) {
-      setError(e?.message || "Errore durante il salvataggio.");
+      setError(`Errore durante il salvataggio: ${e?.message || String(e)}`);
     } finally { setSaving(false); }
   }
 
@@ -957,7 +958,7 @@ function AddRecipePanel({ onClose, onSave, onSaveMany, initialRecipe = null, onU
       </div>
 
       {error && <p style={{ fontSize: 12, color: PALETTE.tomato, margin: 0, fontWeight: 700, background:PALETTE.tomatoSoft, border:`1px solid ${PALETTE.tomato}`, borderRadius:10, padding:10 }}>{error}</p>}
-      <button onClick={save} className="rc-btn" style={{ fontSize: 14, padding: "12px 16px", borderRadius: 14, border: `2.5px solid ${PALETTE.ink}`, background: PALETTE.tomato, color: "#fff", cursor: "pointer", fontWeight: 700, boxShadow: `3px 3px 0 ${PALETTE.ink}` }}>{saving ? "Salvataggio…" : (editing ? "Salva modifiche" : "Salva nel ricettario")}</button>
+      <button type="button" disabled={saving} onClick={save} className="rc-btn" style={{ fontSize: 14, padding: "12px 16px", borderRadius: 14, border: `2.5px solid ${PALETTE.ink}`, background: PALETTE.tomato, color: "#fff", cursor: "pointer", fontWeight: 700, boxShadow: `3px 3px 0 ${PALETTE.ink}` }}>{saving ? "Salvataggio…" : (editing ? "Salva modifiche" : "Salva nel ricettario")}</button>
         </>
       )}
     </div>
@@ -1109,26 +1110,40 @@ export default function App() {
   function openRecipe(r) { setSelectedId(r.id); setView("detail"); }
   function backToList() { setView("list"); setSelectedId(null); }
 
-  async function persistPhotos(recipeId, nextPhotos) {
-    const { error } = await supabase.from("recipes").update({ photos: nextPhotos }).eq("id", recipeId);
-    if (error) { setLoadError("Non riesco a salvare la foto: " + error.message); return false; }
-    return true;
+  async function persistPhotos(recipeId, nextPhotos, coverValue = null) {
+    const payload = { photos: nextPhotos };
+    if (coverValue !== null) payload.cover = coverValue;
+    const { error } = await supabase.from("recipes").update(payload).eq("id", recipeId);
+    if (error) {
+      const msg = `Non riesco a salvare la foto: ${error.message}`;
+      setLoadError(msg);
+      return { ok:false, error:msg };
+    }
+    const { data: verified, error: verifyError } = await supabase.from("recipes").select("*").eq("id", recipeId).single();
+    if (verifyError) {
+      const msg = `Foto aggiornata, ma verifica fallita: ${verifyError.message}`;
+      setLoadError(msg);
+      return { ok:false, error:msg };
+    }
+    setRecipes(prev => prev.map(r => r.id === recipeId ? rowToRecipe(verified) : r));
+    setLoadError("");
+    return { ok:true };
   }
 
   async function addPhoto(recipeId, url, asCover = false) {
-    const recipe = recipes.find((r) => r.id === recipeId);
+    const recipe = recipes.find((r) => String(r.id) === String(recipeId));
     if (!recipe) return;
-    const nextPhotos = asCover ? [url, ...recipe.photos.filter(p => p !== url)] : [...recipe.photos, url];
-    if (!(await persistPhotos(recipeId, nextPhotos))) return;
-    setRecipes((prev) => prev.map((r) => (r.id === recipeId ? { ...r, photos: nextPhotos } : r)));
+    const currentPhotos = Array.isArray(recipe.photos) ? recipe.photos : [];
+    const nextPhotos = asCover ? [url, ...currentPhotos.filter(p => p !== url)] : [...currentPhotos, url];
+    const result = await persistPhotos(recipeId, nextPhotos, asCover ? url : null);
+    if (!result.ok) return;
   }
 
   async function setPhotoAsCover(recipeId, index) {
-    const recipe = recipes.find(r => r.id === recipeId);
+    const recipe = recipes.find(r => String(r.id) === String(recipeId));
     if (!recipe || index <= 0 || !recipe.photos[index]) return;
     const nextPhotos = [recipe.photos[index], ...recipe.photos.filter((_, i) => i !== index)];
-    if (!(await persistPhotos(recipeId, nextPhotos))) return;
-    setRecipes(prev => prev.map(r => r.id === recipeId ? { ...r, photos: nextPhotos } : r));
+    await persistPhotos(recipeId, nextPhotos, recipe.photos[index]);
   }
 
   async function deletePhoto(recipeId, index) {
@@ -1136,8 +1151,8 @@ export default function App() {
     if (!recipe || !recipe.photos[index]) return;
     if (!window.confirm("Eliminare questa foto?")) return;
     const nextPhotos = recipe.photos.filter((_, i) => i !== index);
-    if (!(await persistPhotos(recipeId, nextPhotos))) return;
-    setRecipes(prev => prev.map(r => r.id === recipeId ? { ...r, photos: nextPhotos } : r));
+    const nextCover = nextPhotos[0] || (isCustomCover(recipe.cover) ? "culurgiones" : recipe.cover);
+    await persistPhotos(recipeId, nextPhotos, nextCover);
   }
 
   async function saveNewRecipe(data) {
@@ -1156,48 +1171,56 @@ export default function App() {
   }
 
   async function updateRecipe(recipeId, data) {
-    // Non chiediamo il record aggiornato con .select().single(): con Supabase RLS
-    // un UPDATE può essere consentito anche quando la SELECT di ritorno non lo è.
-    // In quel caso .select().single() faceva sembrare che il salvataggio non fosse avvenuto.
-    const current = recipes.find(r => r.id === recipeId);
+    const current = recipes.find(r => String(r.id) === String(recipeId));
     if (!current) return { ok:false, error:"Ricetta non trovata." };
 
     const nextPhotos = Array.isArray(current.photos) ? current.photos : [];
     const updatePayload = {
-      title: data.title, subtitle: data.subtitle, time: data.time, base_servings: data.baseServings,
-      category: data.category, cover: data.cover, tags: data.tags, ingredients: data.ingredients, steps: data.steps,
+      title: data.title,
+      subtitle: data.subtitle,
+      time: data.time,
+      base_servings: data.baseServings,
+      category: data.category,
+      cover: data.cover,
+      tags: data.tags,
+      ingredients: data.ingredients,
+      steps: data.steps,
     };
 
-    // Se l'utente ha scelto una vera foto, manteniamola anche nella galleria.
-    // Questo evita che una copertina personalizzata venga persa nelle modifiche successive.
     if (isCustomCover(data.cover) && !nextPhotos.includes(data.cover)) {
       updatePayload.photos = [data.cover, ...nextPhotos];
     }
 
-    // Chiediamo esplicitamente l'id aggiornato: se RLS blocca l'UPDATE,
-    // Supabase può restituire error=null ma 0 righe modificate.
-    const { data: updatedRows, error } = await supabase
+    setLoadError("");
+    const { error: updateError } = await supabase
       .from("recipes")
       .update(updatePayload)
+      .eq("id", recipeId);
+
+    if (updateError) {
+      const msg = `Salvataggio non riuscito: ${updateError.message || "errore Supabase"}`;
+      setLoadError(msg);
+      return { ok:false, error:msg };
+    }
+
+    // Verifica reale del valore persistito usando la SELECT che già funziona
+    // per il caricamento iniziale dell'app.
+    const { data: verified, error: verifyError } = await supabase
+      .from("recipes")
+      .select("*")
       .eq("id", recipeId)
-      .select("id");
+      .single();
 
-    if (error) {
-      const msg = `Salvataggio non riuscito: ${error.message || "errore Supabase"}`;
+    if (verifyError) {
+      const msg = `Modifica inviata, ma non riesco a verificarla: ${verifyError.message}`;
       setLoadError(msg);
       return { ok:false, error:msg };
     }
 
-    if (!updatedRows || updatedRows.length === 0) {
-      const msg = "Supabase non ha aggiornato la ricetta. È molto probabile che manchi la policy RLS UPDATE sulla tabella recipes.";
-      setLoadError(msg);
-      return { ok:false, error:msg };
-    }
-
-    const nextRecipe = { ...current, ...data, photos: updatePayload.photos ?? nextPhotos };
-    setRecipes(prev => prev.map(r => r.id === recipeId ? nextRecipe : r));
+    const nextRecipe = rowToRecipe(verified);
+    setRecipes(prev => prev.map(r => String(r.id) === String(recipeId) ? nextRecipe : r));
+    setSelectedId(nextRecipe.id);
     setEditingRecipeId(null);
-    setSelectedId(recipeId);
     setView("detail");
     setLoadError("");
     return { ok:true };
