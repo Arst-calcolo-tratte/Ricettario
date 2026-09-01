@@ -844,7 +844,7 @@ export default function App() {
     window.OneSignalDeferred = window.OneSignalDeferred || [];
     window.OneSignalDeferred.push(async (OneSignal) => {
       try {
-        await OneSignal.init({ appId: ONESIGNAL_APP_ID, safari_web_id: "web.onesignal.auto.487bfeae-71a3-407e-85d8-1b40bd783a80" });
+        await OneSignal.init({ appId: ONESIGNAL_APP_ID });
         await OneSignal.User.addTag("device_id", deviceId);
         const enabled = OneSignal.Notifications.permission;
         setNotifStatus(enabled ? "attive" : "da attivare");
@@ -866,7 +866,9 @@ export default function App() {
         await OneSignal.Notifications.requestPermission();
         await OneSignal.User.addTag("device_id", deviceIdRef.current);
         setNotifStatus(OneSignal.Notifications.permission ? "attive" : "rifiutate");
-        setNotifDebug((prev) => prev + " — dopo attivazione: permesso=" + OneSignal.Notifications.permission);
+        await new Promise((r) => setTimeout(r, 1500));
+        const regs = await (navigator.serviceWorker ? navigator.serviceWorker.getRegistrations() : []);
+        setNotifDebug((prev) => prev + " — DOPO attivazione: permesso=" + OneSignal.Notifications.permission + " — service worker ora registrati: " + regs.length + " — scope: " + (regs.map((r) => r.scope).join(", ") || "nessuno"));
       } catch (e) {
         setNotifDebug("Errore attivazione: " + (e && e.message ? e.message : String(e)));
       }
