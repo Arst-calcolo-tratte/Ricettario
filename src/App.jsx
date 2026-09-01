@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react"; 
+import React, { useState, useEffect, useRef } from "react"; 
 import { supabase } from "./supabaseClient.js";
 
 const ONESIGNAL_APP_ID = "ef0dde25-440e-4a00-b86b-7f686aa31c4c";
@@ -83,6 +83,60 @@ const FONTS = (
     .rc-nav-item.rc-nav-active::before { background: rgba(234,69,48,.10); transform:scale(1.02); }
     .rc-nav-content { position:relative; z-index:1; }
   
+
+    .rc-app-shell { width:100%; max-width:1100px; margin:0 auto; box-sizing:border-box; }
+    .rc-top-header { position:relative; z-index:5; display:flex; align-items:center; justify-content:space-between; gap:14px; margin:2px 0 14px; padding:12px 2px 8px; }
+    .rc-brand { display:flex; align-items:center; gap:10px; }
+    .rc-brand-mark { width:46px; height:46px; border-radius:16px; display:flex; align-items:center; justify-content:center; background:linear-gradient(145deg,#fff,#ffe9d4); border:2.5px solid #2A1D10; box-shadow:4px 4px 0 #F3A61E; font-size:25px; }
+    .rc-eyebrow { font-size:10px; letter-spacing:.11em; text-transform:uppercase; font-weight:800; color:#A82415; }
+    .rc-home-title { margin:0; font-size:clamp(27px,5vw,42px); line-height:1; }
+    .rc-home-subtitle { margin:5px 0 0; font-size:12px; line-height:1.45; color:#7A6E5C; max-width:520px; }
+    .rc-counter { flex-shrink:0; padding:8px 11px; border-radius:14px; background:#fff; border:2px solid #2A1D10; box-shadow:3px 3px 0 #F0DFC4; font-size:11px; font-weight:800; color:#2A1D10; }
+    .rc-category-rail { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; margin:8px 0 16px; }
+    .rc-category-card { border:2px solid #2A1D10; border-radius:16px; min-height:74px; background:#fff; padding:10px 9px; text-align:left; cursor:pointer; box-shadow:3px 3px 0 rgba(42,29,16,.10); transition:transform .16s ease, box-shadow .16s ease; }
+    .rc-category-card:active { transform:translateY(2px); box-shadow:1px 1px 0 rgba(42,29,16,.10); }
+    .rc-category-icon { width:35px; height:35px; display:flex; align-items:center; justify-content:center; border-radius:12px; border:2px solid #2A1D10; margin-bottom:5px; }
+    .rc-category-card-title { font-size:11px; font-weight:800; color:#2A1D10; }
+    .rc-category-card-count { font-size:9px; color:#7A6E5C; margin-top:2px; }
+    .rc-section-head { display:flex; align-items:flex-end; justify-content:space-between; gap:10px; margin:18px 0 9px; }
+    .rc-section-title { margin:0; font-size:21px; }
+    .rc-section-link { border:none; background:transparent; color:#A82415; font-size:11px; font-weight:800; cursor:pointer; padding:4px 0; }
+    .rc-feature { position:relative; display:grid; grid-template-columns:1.15fr .85fr; gap:0; overflow:hidden; background:#fff; border:2.5px solid #2A1D10; border-radius:22px; box-shadow:5px 5px 0 #F3A61E; margin:0 0 18px; cursor:pointer; }
+    .rc-feature-media { min-height:210px; position:relative; }
+    .rc-feature-body { padding:18px; display:flex; flex-direction:column; justify-content:center; }
+    .rc-feature-kicker { font-size:10px; text-transform:uppercase; font-weight:900; color:#EA4530; letter-spacing:.08em; }
+    .rc-feature-title { font-size:26px; line-height:1.02; margin:5px 0 7px; }
+    .rc-feature-sub { font-size:12px; line-height:1.45; color:#7A6E5C; margin:0 0 12px; }
+    .rc-feature-cta { display:inline-flex; align-items:center; gap:7px; padding:9px 12px; border-radius:13px; background:#EA4530; color:#fff; border:2px solid #2A1D10; width:max-content; box-shadow:3px 3px 0 #A82415; font-size:11px; font-weight:800; }
+    .rc-card-media { height:150px; }
+    .rc-card-meta { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
+    .rc-micro-chip { display:inline-flex; align-items:center; gap:4px; border-radius:999px; border:1.5px solid #F0DFC4; padding:4px 7px; background:#FFF8EF; color:#7A6E5C; font-size:9.5px; font-weight:800; }
+    .rc-detail-hero { height:290px !important; margin-bottom:18px !important; border-radius:26px !important; }
+    .rc-detail-overlay { position:absolute; inset:auto 0 0; padding:18px; background:linear-gradient(180deg,transparent,rgba(25,13,7,.78)); color:#fff; }
+    .rc-detail-kicker { font-size:10px; text-transform:uppercase; font-weight:900; letter-spacing:.11em; opacity:.84; }
+    .rc-detail-bigtitle { font-size:31px; line-height:1.03; margin:5px 0 4px; }
+    .rc-detail-subtitle { font-size:12px; opacity:.88; max-width:620px; }
+    .rc-detail-actionrow { display:flex; gap:8px; flex-wrap:wrap; margin:-2px 0 14px; }
+    .rc-action-secondary { display:inline-flex; align-items:center; gap:6px; padding:8px 11px; border-radius:12px; border:2px solid #2A1D10; background:#fff; color:#2A1D10; font-size:11px; font-weight:800; cursor:pointer; box-shadow:2px 2px 0 #F0DFC4; }
+    .rc-panel { background:#fff; border:2px solid #2A1D10; border-radius:20px; padding:14px; box-shadow:3px 3px 0 rgba(42,29,16,.08); }
+    .rc-editor-section { background:#fff; border:2px solid #F0DFC4; border-radius:18px; padding:13px; }
+    .rc-editor-section-title { margin:0 0 9px; font-size:16px; }
+    .rc-bottom-nav { padding-bottom:max(10px, env(safe-area-inset-bottom)) !important; bottom:0 !important; width:min(1000px, calc(100vw - 18px)) !important; border-radius:22px 22px 0 0 !important; }
+    .rc-content-bottom-space { padding-bottom:145px !important; }
+    .rc-chat-surface { background:rgba(255,255,255,.65); border:2px solid #F0DFC4; border-radius:22px; padding:10px; }
+    .rc-day-divider { display:flex; align-items:center; gap:8px; margin:12px 2px 4px; color:#7A6E5C; font-size:9px; font-weight:900; text-transform:uppercase; letter-spacing:.08em; }
+    .rc-day-divider::before, .rc-day-divider::after { content:''; flex:1; height:1px; background:#F0DFC4; }
+    .rc-chat-delete { opacity:.6; transition:opacity .16s ease; }
+    .rc-chat-delete:active { opacity:1; }
+    .rc-modal-sheet { position:fixed; inset:auto 0 0; z-index:1200; background:#FFF9F0; border-top:2.5px solid #2A1D10; border-radius:24px 24px 0 0; box-shadow:0 -18px 50px rgba(42,29,16,.2); padding:14px 16px calc(18px + env(safe-area-inset-bottom)); max-height:78vh; overflow:auto; }
+    @media (max-width: 720px) {
+      .rc-category-rail { grid-template-columns:repeat(2,minmax(0,1fr)); }
+      .rc-feature { grid-template-columns:1fr; }
+      .rc-feature-media { min-height:180px; }
+      .rc-feature-body { padding:14px; }
+      .rc-detail-hero { height:240px !important; }
+      .rc-content-bottom-space { padding-bottom:132px !important; }
+    }
   `}</style>
 );
 
@@ -406,7 +460,7 @@ function RecipeCard({ recipe, onOpen, idx, isFavorite, onToggleFavorite }) {
   return (
     <article className="rc-card rc-fadeup" style={{ position: "relative", background: PALETTE.card, border: `2.5px solid ${PALETTE.ink}`, borderRadius: 18, overflow: "hidden", boxShadow: `4px 4px 0 ${color}`, transform: `rotate(${rot}deg)`, animationDelay: `${idx * 0.05 + 0.05}s` }}>
       <button onClick={() => onOpen(recipe)} aria-label={`Apri ${recipe.title}`} style={{ width: "100%", display: "block", textAlign: "left", background: "transparent", border: "none", cursor: "pointer", padding: 0 }}>
-        <div style={{ height: 132, position: "relative", borderBottom: `2.5px solid ${PALETTE.ink}` }}><CoverVisual recipe={recipe} /></div>
+        <div className="rc-card-media" style={{ position: "relative", borderBottom: `2.5px solid ${PALETTE.ink}` }}><CoverVisual recipe={recipe} /></div>
         <div style={{ padding: "12px 14px 14px" }}>
           <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
             <div style={{ flex: 1, minWidth: 0 }}>
@@ -636,7 +690,7 @@ function RecipeDetail({ recipe, onBack, onAddPhoto, onSetCover, onDeletePhoto, o
   return (<><div className="rc-sans rc-fadeup">
     <div style={{ height: 190, borderRadius: 24, overflow: "hidden", position: "relative", marginBottom: 16, border: `3px solid ${PALETTE.ink}`, boxShadow: `6px 6px 0 ${color}` }}>
       {recipe.photos.length > 0 ? <img src={recipe.photos[0]} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <CoverVisual recipe={recipe} />}
-      <div style={{ position:"absolute", inset:0, background:"linear-gradient(180deg, rgba(0,0,0,.12), transparent 45%, rgba(0,0,0,.22))", pointerEvents:"none" }} />
+      <div style={{ position:"absolute", inset:0, background:"linear-gradient(180deg, rgba(0,0,0,.12), transparent 45%, rgba(0,0,0,.22))", pointerEvents:"none" }} /><div className="rc-detail-overlay"><div className="rc-detail-kicker">{(CATEGORIES.find(c => c.id === recipe.category)?.label || recipe.category).toUpperCase()}</div><div className="rc-display rc-detail-bigtitle">{recipe.title}</div><div className="rc-detail-subtitle">{recipe.subtitle || "Una ricetta da tenere a portata di mano."}</div></div>
       <button onClick={onBack} className="rc-btn" aria-label="Torna alle ricette" style={{ position: "absolute", top: 12, left: 12, width: 38, height: 38, borderRadius: "50%", border: `2px solid ${PALETTE.ink}`, background: "#fff", color: PALETTE.ink, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}><Icon name="arrowLeft" size={17} /></button>
       <div style={{ position:"absolute", top:12, right:12, display:"flex", gap:7 }}>
         <button onClick={onEdit} className="rc-btn" aria-label="Modifica ricetta" style={{ width:38, height:38, borderRadius:"50%", border:`2px solid ${PALETTE.ink}`, background:"#fff", color:PALETTE.ink, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer" }}><Icon name="pencil" size={16}/></button>
@@ -647,11 +701,11 @@ function RecipeDetail({ recipe, onBack, onAddPhoto, onSetCover, onDeletePhoto, o
         <input type="file" accept="image/*" style={{display:"none"}} onChange={(e)=>{ const f=e.target.files?.[0]; if(!f) return; const r=new FileReader(); r.onload=()=>onAddPhoto(recipe.id, r.result, true); r.readAsDataURL(f); e.target.value=""; }} />
       </label>
     </div>
-    <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}><div><h2 className="rc-display" style={{ fontSize: 29, fontWeight: 700, color: PALETTE.ink, margin: "0 0 3px" }}>{recipe.title}</h2><p className="rc-display-i" style={{ fontSize: 15, color: PALETTE.inkSoft, margin: 0 }}>{recipe.subtitle || "Una ricetta da tenere a portata di mano."}</p></div><span style={{ flexShrink: 0, fontSize: 10, fontWeight: 800, color: "#fff", background: color, padding: "6px 9px", borderRadius: 12, border: `2px solid ${PALETTE.ink}` }}>{(CATEGORIES.find(c => c.id === recipe.category)?.label || recipe.category).toUpperCase()}</span></div>
+    <div className="rc-detail-actionrow"><button onClick={onEdit} className="rc-action-secondary"><Icon name="pencil" size={14}/> Modifica ricetta</button><button onClick={() => onToggleFavorite(recipe.id)} className="rc-action-secondary" style={{ color:isFavorite?PALETTE.tomato:PALETTE.ink }}><Icon name="heart" size={14}/> {isFavorite ? "Nei preferiti" : "Aggiungi ai preferiti"}</button></div>
     <div className="rc-detail-meta" style={{ margin: "16px 0" }}><div style={{ background: PALETTE.card, border: `2px solid ${PALETTE.ink}`, borderRadius: 14, padding: "10px 12px" }}><div style={{ fontSize: 10, color: PALETTE.inkSoft, fontWeight: 800 }}>TEMPO</div><div style={{ fontSize: 15, color: PALETTE.ink, fontWeight: 800, marginTop: 3 }}>{recipe.time || "—"}</div></div><div style={{ background: PALETTE.card, border: `2px solid ${PALETTE.ink}`, borderRadius: 14, padding: "10px 12px" }}><div style={{ fontSize: 10, color: PALETTE.inkSoft, fontWeight: 800 }}>PORZIONI</div><div style={{ fontSize: 15, color: PALETTE.ink, fontWeight: 800, marginTop: 3 }}>{servings}</div></div><div style={{ background: PALETTE.card, border: `2px solid ${PALETTE.ink}`, borderRadius: 14, padding: "10px 12px" }}><div style={{ fontSize: 10, color: PALETTE.inkSoft, fontWeight: 800 }}>TAG</div><div style={{ fontSize: 12, color: PALETTE.ink, fontWeight: 800, marginTop: 3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{recipe.tags.join(" · ") || "—"}</div></div></div>
     <button onClick={() => setCookMode(true)} className="rc-btn" style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, borderRadius: 15, border: `2.5px solid ${PALETTE.ink}`, background: PALETTE.saffron, color: PALETTE.ink, padding: "12px 16px", fontSize: 14, fontWeight: 800, cursor: "pointer", boxShadow: `4px 4px 0 ${PALETTE.ink}`, marginBottom: 18 }}>🍳 Inizia a cucinare</button>
     <div style={{ position: "relative", display: "flex", background: PALETTE.card, borderRadius: 24, padding: 4, marginBottom: 20, border: `2px solid ${PALETTE.ink}` }}><div style={{ position: "absolute", top: 4, bottom: 4, left: 4, width: `calc((100% - 8px) / 3)`, borderRadius: 20, background: color, transform: `translateX(${tabIdx * 100}%)`, transition: "transform .3s cubic-bezier(.3,1,.4,1)" }} />{tabs.map(t => <button key={t.id} onClick={() => setTab(t.id)} style={{ position: "relative", flex: 1, fontSize: 13, padding: "8px 6px", borderRadius: 20, border: "none", background: "transparent", color: tab === t.id ? "#fff" : PALETTE.inkSoft, cursor: "pointer", fontWeight: 700, zIndex: 1 }}>{t.label}</button>)}</div>
-    {tab === "ingredienti" && <><div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: PALETTE.basilSoft, borderRadius: 14, padding: "11px 16px", marginBottom: 18, border: `2px solid ${PALETTE.ink}` }}><span style={{ fontSize: 13, color: PALETTE.basilDeep, fontWeight: 700 }}>Persone</span><div style={{ display: "flex", alignItems: "center", gap: 14 }}><button onClick={() => scaleServings(-1)} className="rc-btn" style={{ width: 28, height: 28, borderRadius: "50%", border: `2px solid ${PALETTE.ink}`, background: PALETTE.card, cursor: "pointer" }}>−</button><span className="rc-display" style={{ fontSize: 17, fontWeight: 700, minWidth: 16, textAlign: "center" }}>{servings}</span><button onClick={() => scaleServings(1)} className="rc-btn" style={{ width: 28, height: 28, borderRadius: "50%", border: `2px solid ${PALETTE.ink}`, background: PALETTE.card, cursor: "pointer" }}>+</button></div></div><p style={{ fontSize: 12, color: PALETTE.inkSoft, margin: "0 0 8px" }}>Modifica un ingrediente e gli altri si aggiornano da soli. Blocca quelli che non vuoi scalare.</p><div className="rc-detail-layout"><section><h3 className="rc-display" style={{ margin: "0 0 8px", fontSize: 20 }}>Ingredienti</h3><div>{ingredients.map((ing, idx) => <IngredientRow key={ing.id} ing={ing} idx={idx} onChange={handleAmountChange} onToggleLock={toggleLock} />)}</div></section><section><h3 className="rc-display" style={{ margin: "0 0 8px", fontSize: 20 }}>Passaggi</h3><StepsView steps={recipe.steps} /></section></div></>}
+    {tab === "ingredienti" && <><div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: PALETTE.basilSoft, borderRadius: 14, padding: "11px 16px", marginBottom: 18, border: `2px solid ${PALETTE.ink}` }}><span style={{ fontSize: 13, color: PALETTE.basilDeep, fontWeight: 700 }}>Persone</span><div style={{ display: "flex", alignItems: "center", gap: 14 }}><button onClick={() => scaleServings(-1)} className="rc-btn" style={{ width: 28, height: 28, borderRadius: "50%", border: `2px solid ${PALETTE.ink}`, background: PALETTE.card, cursor: "pointer" }}>−</button><span className="rc-display" style={{ fontSize: 17, fontWeight: 700, minWidth: 16, textAlign: "center" }}>{servings}</span><button onClick={() => scaleServings(1)} className="rc-btn" style={{ width: 28, height: 28, borderRadius: "50%", border: `2px solid ${PALETTE.ink}`, background: PALETTE.card, cursor: "pointer" }}>+</button></div></div><p style={{ fontSize: 12, color: PALETTE.inkSoft, margin: "0 0 8px" }}>Modifica un ingrediente e gli altri si aggiornano da soli. Blocca quelli che non vuoi scalare.</p><div className="rc-detail-layout"><section className="rc-panel"><h3 className="rc-display" style={{ margin: "0 0 8px", fontSize: 20 }}>Ingredienti</h3><div>{ingredients.map((ing, idx) => <IngredientRow key={ing.id} ing={ing} idx={idx} onChange={handleAmountChange} onToggleLock={toggleLock} />)}</div></section><section className="rc-panel"><h3 className="rc-display" style={{ margin: "0 0 8px", fontSize: 20 }}>Passaggi</h3><StepsView steps={recipe.steps} /></section></div></>}
     {tab === "passaggi" && <StepsView steps={recipe.steps} />}
     {tab === "foto" && <PhotosView photos={recipe.photos} onAdd={url => onAddPhoto(recipe.id, url, false)} onSetCover={i => onSetCover(recipe.id, i)} onDeletePhoto={i => onDeletePhoto(recipe.id, i)} />}
   </div>{cookMode && <CookMode recipe={recipe} onClose={() => setCookMode(false)} />}</>);
@@ -697,10 +751,10 @@ function ChatPanel({ messages, onSend, onDelete }) {
     setDraft("");
   }
   return (
-    <div className="rc-sans" style={{ display:"flex", flexDirection:"column", gap:10 }}>
+    <div className="rc-sans rc-chat-surface" style={{ display:"flex", flexDirection:"column", gap:10 }}>
       <div ref={scrollRef} onScroll={onScroll} className="rc-chat-scroll" style={{ height:"min(58vh, 520px)", minHeight:320, overflowY:"auto", display:"flex", flexDirection:"column", gap:10, padding:"6px 5px 10px 2px", scrollBehavior:"smooth" }}>
         {messages.length === 0 && <div style={{ margin:"auto", textAlign:"center", padding:24, color:PALETTE.inkSoft }}><div style={{ fontSize:38 }}>💬</div><div className="rc-display" style={{ fontSize:20, color:PALETTE.ink, marginTop:6 }}>Nessun messaggio ancora</div><p style={{ fontSize:12, margin:"5px 0 0" }}>Scrivi qualcosa per iniziare la conversazione.</p></div>}
-        {messages.map((m, i) => <ChatBubble key={m.id || i} m={m} i={i} onDelete={onDelete} />)}
+        {messages.map((m, i) => { const prev=messages[i-1]; const day=new Date(m.createdAt).toLocaleDateString("it-IT", { day:"numeric", month:"long", year:"numeric" }); const prevDay=prev ? new Date(prev.createdAt).toLocaleDateString("it-IT", { day:"numeric", month:"long", year:"numeric" }) : null; return <React.Fragment key={m.id || i}>{day !== prevDay && <div className="rc-day-divider">{day}</div>}<ChatBubble m={m} i={i} onDelete={onDelete} /></React.Fragment>; })}
       </div>
       {showJump && <button onClick={() => scrollToBottom()} className="rc-btn rc-chat-nudge" style={{ alignSelf:"center", margin:"-2px 0 0", border:`2px solid ${PALETTE.ink}`, background:PALETTE.saffron, color:PALETTE.ink, borderRadius:18, padding:"6px 11px", fontSize:11, fontWeight:800, cursor:"pointer" }}>↓ Vai agli ultimi messaggi</button>}
       <div style={{ display:"flex", gap:8, marginTop:2, position:"sticky", bottom:0, background:PALETTE.bg, paddingTop:6 }}>
@@ -817,8 +871,6 @@ function AddRecipePanel({ onClose, onSave, onSaveMany, initialRecipe = null, onU
   const [steps, setSteps] = useState(initialRecipe?.steps?.map(s => ({ text:s.text || "", minutes:s.seconds ? Math.round(s.seconds/60) : "" })) || [{ text: "", minutes: "" }]);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
-  const [debug, setDebug] = useState("Pannello pronto — in attesa di Salva modifiche");
-  function dbg(msg) { setDebug(msg); console.log("[RICETTARIO DEBUG]", msg); }
 
   function updateIng(i, field, value) { setIngredients((prev) => prev.map((row, idx) => (idx === i ? { ...row, [field]: value } : row))); }
   function addIng() { setIngredients((prev) => [...prev, { name: "", amount: "", unit: "" }]); }
@@ -828,17 +880,13 @@ function AddRecipePanel({ onClose, onSave, onSaveMany, initialRecipe = null, onU
   function removeStep(i) { setSteps((prev) => prev.filter((_, idx) => idx !== i)); }
 
   async function save() {
-    dbg("1/6 CLICK ricevuto");
     if (!title.trim()) { setError("Dai un titolo alla ricetta."); return; }
-    dbg("2/6 Titolo valido");
     const cleanIngredients = ingredients.filter((r) => r.name.trim());
     const cleanSteps = steps.filter((r) => r.text.trim());
     if (cleanIngredients.length === 0) { setError("Aggiungi almeno un ingrediente."); return; }
     if (cleanSteps.length === 0) { setError("Aggiungi almeno un passaggio."); return; }
-    dbg("3/6 Validazione superata");
     setError("");
     setSaving(true);
-    dbg(editing ? "4/6 Chiamo onUpdate()" : "4/6 Chiamo onSave()");
     try {
       const payload = {
         title: String(title ?? "").trim(),
@@ -859,14 +907,11 @@ function AddRecipePanel({ onClose, onSave, onSaveMany, initialRecipe = null, onU
         })),
       };
       const result = editing ? await onUpdate(payload) : await onSave(payload);
-      dbg(`5/6 onUpdate/onSave ha risposto: ${JSON.stringify(result)}`);
       if (result && result.ok === false) setError(result.error || "Non riesco a salvare le modifiche.");
       else if (result === false) setError("Non riesco a salvare le modifiche.");
-      else if (editing) { setError(""); dbg("6/6 SALVATAGGIO COMPLETATO"); }
     } catch (e) {
-      dbg(`ERRORE nel salvataggio: ${e?.message || String(e)}`);
       setError(`Errore durante il salvataggio: ${e?.message || String(e)}`);
-    } finally { setSaving(false); dbg("Fine handler Salva"); }
+    } finally { setSaving(false); }
   }
 
   const inputStyle = { width: "100%", height: 38, border: `2px solid ${PALETTE.ink}`, borderRadius: 10, background: PALETTE.card, padding: "0 12px", fontSize: 13, color: PALETTE.ink, boxSizing: "border-box" };
@@ -929,6 +974,22 @@ function AddRecipePanel({ onClose, onSave, onSaveMany, initialRecipe = null, onU
       {mode === "manuale" && (
         <>
       <CoverPicker value={cover} onChange={setCover} />
+      {editing && Array.isArray(initialRecipe?.photos) && initialRecipe.photos.length > 0 && (
+        <div className="rc-editor-section" style={{ marginTop: 2 }}>
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:8, marginBottom:8 }}>
+            <h3 className="rc-display rc-editor-section-title" style={{ margin:0 }}>Foto già presenti</h3>
+            <span className="rc-sans" style={{ fontSize:10, color:PALETTE.inkSoft }}>{initialRecipe.photos.length} foto</span>
+          </div>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:8 }}>
+            {initialRecipe.photos.map((photo, i) => (
+              <button key={`${photo}-${i}`} type="button" onClick={() => setCover(photo)} className="rc-btn" style={{ padding:0, overflow:"hidden", height:66, borderRadius:11, border: cover === photo ? `3px solid ${PALETTE.tomato}` : `2px solid ${PALETTE.border}`, background:PALETTE.card, cursor:"pointer", position:"relative" }}>
+                <img src={photo} alt={`Foto ${i+1}`} style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }} />
+                {cover === photo && <span style={{ position:"absolute", left:4, bottom:4, background:PALETTE.tomato, color:"#fff", borderRadius:8, padding:"3px 5px", fontSize:8, fontWeight:900 }}>COPERTINA</span>}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       <input placeholder="Titolo della ricetta" value={title} onChange={(e) => setTitle(e.target.value)} style={inputStyle} />
       <input placeholder="Sottotitolo (facoltativo)" value={subtitle} onChange={(e) => setSubtitle(e.target.value)} style={inputStyle} />
@@ -949,8 +1010,8 @@ function AddRecipePanel({ onClose, onSave, onSaveMany, initialRecipe = null, onU
 
       <input placeholder="Tag separati da virgola (es. sardo, veloce)" value={tagsText} onChange={(e) => setTagsText(e.target.value)} style={inputStyle} />
 
-      <div>
-        <span style={{ fontSize: 12, fontWeight: 700, color: PALETTE.inkSoft }}>Ingredienti</span>
+      <div className="rc-editor-section">
+        <h3 className="rc-display rc-editor-section-title">Ingredienti</h3>
         <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 6 }}>
           {ingredients.map((row, i) => (
             <div key={i} style={{ display: "flex", gap: 6 }}>
@@ -964,8 +1025,8 @@ function AddRecipePanel({ onClose, onSave, onSaveMany, initialRecipe = null, onU
         <button onClick={addIng} className="rc-btn" style={{ marginTop: 8, fontSize: 12, padding: "7px 12px", borderRadius: 10, border: `2px dashed ${PALETTE.border}`, background: "transparent", color: PALETTE.inkSoft, cursor: "pointer", fontWeight: 600 }}>+ Aggiungi ingrediente</button>
       </div>
 
-      <div>
-        <span style={{ fontSize: 12, fontWeight: 700, color: PALETTE.inkSoft }}>Passaggi</span>
+      <div className="rc-editor-section">
+        <h3 className="rc-display rc-editor-section-title">Passaggi</h3>
         <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 6 }}>
           {steps.map((row, i) => (
             <div key={i} style={{ display: "flex", gap: 6 }}>
@@ -979,7 +1040,7 @@ function AddRecipePanel({ onClose, onSave, onSaveMany, initialRecipe = null, onU
       </div>
 
       {error && <p style={{ fontSize: 12, color: PALETTE.tomato, margin: 0, fontWeight: 700, background:PALETTE.tomatoSoft, border:`1px solid ${PALETTE.tomato}`, borderRadius:10, padding:10 }}>{error}</p>}
-      <button type="button" disabled={saving} onClick={save} className="rc-btn" style={{ fontSize: 14, padding: "12px 16px", borderRadius: 14, border: `2.5px solid ${PALETTE.ink}`, background: PALETTE.tomato, color: "#fff", cursor: "pointer", fontWeight: 700, boxShadow: `3px 3px 0 ${PALETTE.ink}` }}>{saving ? "Salvataggio…" : (editing ? "Salva modifiche" : "Salva nel ricettario")}</button>
+      <div style={{ position:"sticky", bottom:0, padding:"10px 0 calc(4px + env(safe-area-inset-bottom))", background:"linear-gradient(180deg, rgba(255,246,230,0), #FFF6E6 35%)", zIndex:4 }}><button type="button" disabled={saving} onClick={save} className="rc-btn" style={{ width:"100%", fontSize: 14, padding: "13px 16px", borderRadius: 15, border: `2.5px solid ${PALETTE.ink}`, background: saving ? PALETTE.inkSoft : PALETTE.tomato, color: "#fff", cursor: saving ? "wait" : "pointer", fontWeight: 800, boxShadow: `4px 4px 0 ${PALETTE.ink}` }}>{saving ? "Salvataggio…" : (editing ? "Salva modifiche" : "Salva nel ricettario")}</button></div>
         </>
       )}
     </div>
@@ -1028,6 +1089,41 @@ function rowToRecipe(row) {
     steps: row.steps || [],
     photos: row.photos || [],
   };
+}
+
+
+function HomeCategoryRail({ recipes, onSelect }) {
+  return (
+    <div className="rc-category-rail">
+      {CATEGORIES.map((c) => {
+        const count = recipes.filter(r => r.category === c.id).length;
+        return (
+          <button key={c.id} onClick={() => onSelect(c.id)} className="rc-category-card">
+            <div className="rc-category-icon" style={{ background: `${c.color}16` }}><CategoryIcon id={c.id} /></div>
+            <div className="rc-category-card-title">{c.label}</div>
+            <div className="rc-category-card-count">{count} {count === 1 ? "ricetta" : "ricette"}</div>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function FeaturedHero({ recipe, onOpen }) {
+  if (!recipe) return null;
+  const color = COVER_COLOR[recipe.cover] || PALETTE.tomato;
+  const cat = CATEGORIES.find(c => c.id === recipe.category);
+  return (
+    <button onClick={() => onOpen(recipe)} className="rc-feature rc-btn" style={{ padding:0, textAlign:"left", width:"100%" }}>
+      <div className="rc-feature-media"><CoverVisual recipe={recipe} /><div style={{position:"absolute",inset:0,background:"linear-gradient(180deg,rgba(0,0,0,.02),rgba(0,0,0,.28))"}}/></div>
+      <div className="rc-feature-body">
+        <div className="rc-feature-kicker">Ricetta del momento · {cat?.label || recipe.category}</div>
+        <h2 className="rc-display rc-feature-title">{recipe.title}</h2>
+        <p className="rc-feature-sub">{recipe.subtitle || "Una ricetta pronta da provare."}</p>
+        <span className="rc-feature-cta">Apri ricetta <Icon name="chevronRight" size={14} color="#fff" /></span>
+      </div>
+    </button>
+  );
 }
 
 export default function App() {
@@ -1192,7 +1288,6 @@ export default function App() {
   }
 
   async function updateRecipe(recipeId, data) {
-    console.log("[RICETTARIO DEBUG] updateRecipe START", recipeId, data);
     const current = recipes.find(r => String(r.id) === String(recipeId));
     if (!current) return { ok:false, error:"Ricetta non trovata." };
 
@@ -1214,13 +1309,10 @@ export default function App() {
     }
 
     setLoadError("");
-    console.log("[RICETTARIO DEBUG] UPDATE Supabase INVIATO", updatePayload);
     const { error: updateError } = await supabase
       .from("recipes")
       .update(updatePayload)
       .eq("id", recipeId);
-
-    console.log("[RICETTARIO DEBUG] UPDATE risposta", updateError);
     if (updateError) {
       const msg = `Salvataggio non riuscito: ${updateError.message || "errore Supabase"}`;
       setLoadError(msg);
@@ -1229,7 +1321,6 @@ export default function App() {
 
     // Verifica reale del valore persistito usando la SELECT che già funziona
     // per il caricamento iniziale dell'app.
-    console.log("[RICETTARIO DEBUG] UPDATE OK, verifico SELECT");
     const { data: verified, error: verifyError } = await supabase
       .from("recipes")
       .select("*")
@@ -1241,8 +1332,6 @@ export default function App() {
       setLoadError(msg);
       return { ok:false, error:msg };
     }
-
-    console.log("[RICETTARIO DEBUG] VERIFY risposta", verified, verifyError);
     const nextRecipe = rowToRecipe(verified);
     setRecipes(prev => prev.map(r => String(r.id) === String(recipeId) ? nextRecipe : r));
     setSelectedId(nextRecipe.id);
@@ -1294,7 +1383,7 @@ export default function App() {
   const catRecipes = openCategory ? recipes.filter(r => r.category === openCategory) : [];
 
   return (
-    <div className="rc-app" style={{ background: PALETTE.bg, minHeight: 500, borderRadius: 24, padding: "18px 18px 112px", maxWidth: 380, margin: "0 auto", position: "relative", overflow: "hidden", boxSizing: "border-box" }}>
+    <div className="rc-app" style={{ background: PALETTE.bg, minHeight: 500, borderRadius: 24, padding: "18px 18px 112px", maxWidth: "1100px", margin: "0 auto", position: "relative", overflow: "hidden", boxSizing: "border-box" }}>
       {FONTS}
       <Blob color={PALETTE.tomato} size={90} top="-20px" left="-20px" delay="0s" />
       <Blob color={PALETTE.saffron} size={70} top="150px" left="300px" delay="1.5s" />
@@ -1302,16 +1391,17 @@ export default function App() {
       <ChefHatDoodle top="4px" left="150px" color={PALETTE.saffron} rot={-8} delay="0s" />
       <WhiskDoodle top="180px" left="320px" color={PALETTE.tomato} rot={10} delay="0.6s" />
 
-      <div style={{ position: "relative" }}>
+      <div className="rc-content-bottom-space" style={{ position: "relative" }}>
         {view === "list" && (tab === "ricette" || tab === "preferiti") && (
           <>
-            <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:12, margin:"10px 0 4px" }}><div><h1 className="rc-display" style={{ fontSize:29, fontWeight:700, color:PALETTE.ink, margin:0 }}>{tab === "preferiti" ? "Le mie preferite" : "Il nostro ricettario"}</h1><SharedWith name={sharedWith} onSave={setSharedWith} /></div><div className="rc-desktop-only rc-sans" style={{ fontSize:11, color:PALETTE.inkSoft, paddingTop:7 }}>☕ {recipes.length} ricette</div></div>
+            <div className="rc-top-header"><div className="rc-brand"><div className="rc-brand-mark">🍳</div><div><div className="rc-eyebrow">Il nostro spazio</div><h1 className="rc-display rc-home-title">{tab === "preferiti" ? "Le mie preferite" : "Ricettario"}</h1><p className="rc-sans rc-home-subtitle">{tab === "preferiti" ? "Le ricette che vuoi ritrovare al volo." : "Ricette, idee e piccoli rituali da portare in cucina."}</p><SharedWith name={sharedWith} onSave={setSharedWith} /></div></div><div className="rc-counter">{recipes.length} ricette</div></div>
             <SearchBar value={query} onChange={setQuery} />
+            {!query.trim() && filterCategory === "tutte" && tab === "ricette" && <><div className="rc-section-head"><h2 className="rc-display rc-section-title">Esplora per categoria</h2><button className="rc-section-link" onClick={() => setFilterCategory("tutte")}>Tutte</button></div><HomeCategoryRail recipes={recipes} onSelect={(id)=>setFilterCategory(id)} /><div className="rc-section-head"><h2 className="rc-display rc-section-title">Da provare</h2></div></>}
             <div className="rc-toolbar" style={{ marginBottom:10 }}><button onClick={()=>setFilterCategory("tutte")} className="rc-chip rc-btn" style={{ fontSize:12,padding:"7px 12px",borderRadius:18,border:`2px solid ${PALETTE.ink}`,background:filterCategory==="tutte"?PALETTE.ink:PALETTE.card,color:filterCategory==="tutte"?"#fff":PALETTE.ink,cursor:"pointer",fontWeight:800 }}>Tutte</button>{CATEGORIES.map(c=><button key={c.id} onClick={()=>setFilterCategory(c.id)} className="rc-chip rc-btn" style={{ fontSize:12,padding:"7px 12px",borderRadius:18,border:`2px solid ${PALETTE.ink}`,background:filterCategory===c.id?c.color:PALETTE.card,color:filterCategory===c.id?"#fff":PALETTE.ink,cursor:"pointer",fontWeight:800 }}>{c.label}</button>)}</div>
             {tab === "ricette" && <button onClick={()=>setView("add")} className="rc-btn rc-pulse" style={{ display:"flex",alignItems:"center",justifyContent:"center",gap:8,width:"100%",padding:"13px 16px",borderRadius:16,border:`2.5px solid ${PALETTE.ink}`,background:PALETTE.tomato,color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:18,boxShadow:`4px 4px 0 ${PALETTE.saffron}` }}><Icon name="plus" size={18}/>Nuova ricetta</button>}
             {loading && <p className="rc-sans" style={{ fontSize:13,color:PALETTE.inkSoft }}>Carico le ricette...</p>}
             {loadError && <p className="rc-sans" style={{ fontSize:12,color:PALETTE.tomato,fontWeight:600,background:PALETTE.tomatoSoft,border:`1px solid ${PALETTE.tomato}`,borderRadius:10,padding:10 }}>{loadError}</p>}
-            {!loading && !loadError && tab === "ricette" && !query.trim() && filterCategory === "tutte" && recipes.length > 0 && <FeaturedCard recipe={featured} onOpen={openRecipe} />}
+            {!loading && !loadError && tab === "ricette" && !query.trim() && filterCategory === "tutte" && recipes.length > 0 && <FeaturedHero recipe={featured} onOpen={openRecipe} />}
             {!loading && !loadError && tab === "preferiti" && favoriteRecipes.length === 0 && <div style={{ background:PALETTE.card,border:`2px dashed ${PALETTE.border}`,borderRadius:18,padding:24,textAlign:"center",marginBottom:18 }}><div style={{ fontSize:36 }}>♡</div><div className="rc-display" style={{ fontSize:20,marginTop:4 }}>Ancora nessuna preferita</div><p style={{ fontSize:12,color:PALETTE.inkSoft }}>Tocca il cuore sulle ricette che vuoi tenere a portata di mano.</p></div>}
             {!loading && !loadError && <div className="rc-grid" style={{ paddingBottom:28 }}>{(tab === "preferiti" ? favoriteRecipes : searchResults).map((r,i)=><RecipeCard key={r.id} recipe={r} onOpen={openRecipe} idx={i} isFavorite={favorites.includes(r.id)} onToggleFavorite={toggleFavorite}/>)}</div>}
           </>
@@ -1337,7 +1427,7 @@ export default function App() {
 
         {view === "add" && <AddRecipePanel onClose={() => setView("list")} onSave={saveNewRecipe} onSaveMany={saveManyRecipes} />}
         {view === "detail" && selected && !editingRecipeId && <RecipeDetail recipe={selected} onBack={backToList} onAddPhoto={(id,url,cover)=>addPhoto(id,url,cover)} onSetCover={setPhotoAsCover} onDeletePhoto={deletePhoto} onEdit={() => setEditingRecipeId(selected.id)} isFavorite={favorites.includes(selected.id)} onToggleFavorite={toggleFavorite}/>}
-        {view === "detail" && selected && editingRecipeId === selected.id && <AddRecipePanel initialRecipe={selected} onClose={() => setEditingRecipeId(null)} onUpdate={(data) => { console.log("[RICETTARIO DEBUG] parent onUpdate wrapper", selected.id); return updateRecipe(selected.id, data); }} onSave={saveNewRecipe} onSaveMany={saveManyRecipes} />}
+        {view === "detail" && selected && editingRecipeId === selected.id && <AddRecipePanel initialRecipe={selected} onClose={() => setEditingRecipeId(null)} onUpdate={(data) => updateRecipe(selected.id, data)} onSave={saveNewRecipe} onSaveMany={saveManyRecipes} />}
 
         {tab === "chat" && view === "list" && (
           <>
@@ -1361,11 +1451,7 @@ export default function App() {
                 🔔 Attiva notifiche per i nuovi messaggi
               </button>
             )}
-            {notifDebug && (
-              <div className="rc-sans" style={{ fontSize: 11, color: PALETTE.inkSoft, background: "#fff", border: `1px solid ${PALETTE.border}`, borderRadius: 10, padding: "8px 10px", marginBottom: 14, wordBreak: "break-word" }}>
-                {notifDebug}
-              </div>
-            )}
+            
             <ChatPanel messages={messages} onSend={sendMessage} onDelete={deleteMessage} />
           </>
         )}
