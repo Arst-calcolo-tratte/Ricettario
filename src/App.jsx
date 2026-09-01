@@ -658,7 +658,67 @@ function CoverPicker({ value, onChange }) {
   );
 }
 
-function AddRecipePanel({ onClose, onSave }) {
+function parseRicetteFile(testo) {
+  const blocchi = testo.split(/^\s*===\s*$/m).map((b) => b.trim()).filter(Boolean);
+  const ricette = [];
+
+  for (const blocco of blocchi) {
+    const righe = blocco.split("\n").map((r) => r.trim());
+    const r = { title: "", subtitle: "", time: "", baseServings: 4, category: "primi", cover: "culurgiones", tags: [], ingredients: [], steps: [] };
+    let sezione = null;
+
+    for (const riga of righe) {
+      if (!riga) continue;
+      const basso = riga.toLowerCase();
+
+      if (basso.startsWith("titolo:")) { r.title = riga.slice(7).trim(); sezione = null; continue; }
+      if (basso.startsWith("sottotitolo:")) { r.subtitle = riga.slice(12).trim(); sezione = null; continue; }
+      if (basso.startsWith("categoria:")) { r.category = riga.slice(10).trim().toLowerCase(); sezione = null; continue; }
+      if (basso.startsWith("tempo:")) { r.time = riga.slice(6).trim(); sezione = null; continue; }
+      if (basso.startsWith("persone:")) { r.baseServings = parseInt(riga.slice(8).trim(), 10) || 4; sezione = null; continue; }
+      if (basso.startsWith("tag:")) { r.tags = riga.slice(4).split(",").map((t) => t.trim()).filter(Boolean); sezione = null; continue; }
+      if (basso.startsWith("ingredienti")) { sezione = "ing"; continue; }
+      if (basso.startsWith("passaggi")) { sezione = "pas"; continue; }
+
+      if (sezione === "ing" && riga.startsWith("-")) {
+        const corpo = riga.slice(1).trim();
+        const due = corpo.split(":");
+        const nome = (due[0] || "").trim();
+        if (!nome) continue;
+        const resto = (due[1] || "").trim();
+        const m = resto.match(/^([\d.,]+)\s*(.*)$/);
+        r.ingredients.push({
+          name: nome,
+          amount: m ? parseFloat(m[1].replace(",", ".")) || 0 : 0,
+          unit: m && m[2] ? m[2].trim() : null,
+        });
+        continue;
+      }
+
+      if (sezione === "pas" && /^\d+[.)]/.test(riga)) {
+        const testoPasso = riga.replace(/^\d+[.)]\s*/, "");
+        const tm = testoPasso.match(/\(([\d]+)\s*min\)/i);
+        r.steps.push({
+          text: testoPasso.replace(/\s*\([\d]+\s*min\)/i, "").trim(),
+          seconds: tm ? parseInt(tm[1], 10) * 60 : null,
+        });
+        continue;
+      }
+    }
+
+    const categorieValide = ["antipasti", "primi", "secondi", "dolci"];
+    if (!categorieValide.includes(r.category)) r.category = "primi";
+    if (r.title && r.ingredients.length > 0 && r.steps.length > 0) ricette.push(r);
+  }
+
+  return ricette;
+}
+
+function AddRecipePanel({ onClose, onSave, onSaveMany }) {
+  const [mode, setMode] = useState("manuale");
+  const [fileText, setFileText] = useState("");
+  const [importMsg, setImportMsg] = useState("");
+  const fileRef = useRef(null);
   const [title, setTitle] = useState("");
   const [subtitle, setSubtitle] = useState("");
   const [time, setTime] = useState("");
@@ -694,6 +754,29 @@ function AddRecipePanel({ onClose, onSave }) {
 
   const inputStyle = { width: "100%", height: 38, border: `2px solid ${PALETTE.ink}`, borderRadius: 10, background: PALETTE.card, padding: "0 12px", fontSize: 13, color: PALETTE.ink, boxSizing: "border-box" };
 
+  function leggiFile(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      setFileText(String(reader.result || ""));
+      setImportMsg("");
+    };
+    reader.readAsText(file);
+    e.target.value = "";
+  }
+
+  async function importa() {
+    const ricette = parseRicetteFile(fileText);
+    if (ricette.length === 0) {
+      setImportMsg("Non ho trovato ricette valide. Controlla che il file segua il modello (Titolo:, Ingredienti:, Passaggi:, e === tra una ricetta e l'altra).");
+      return;
+    }
+    setImportMsg(`Importo ${ricette.length} ricett${ricette.length === 1 ? "a" : "e"}...`);
+    await onSaveMany(ricette);
+    onClose();
+  }
+
   return (
     <div className="rc-sans rc-fadeup" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
       <button onClick={onClose} className="rc-btn" style={{ alignSelf: "flex-start", display: "flex", alignItems: "center", gap: 6, background: "transparent", border: "none", color: PALETTE.inkSoft, fontSize: 13, padding: "6px 0", cursor: "pointer" }}>
@@ -701,6 +784,33 @@ function AddRecipePanel({ onClose, onSave }) {
       </button>
       <h2 className="rc-display" style={{ fontSize: 22, fontWeight: 700, color: PALETTE.ink, margin: 0 }}>Nuova ricetta</h2>
 
+      <div style={{ display: "flex", gap: 8 }}>
+        {[{ id: "manuale", label: "Scrivi a mano" }, { id: "file", label: "Importa da file" }].map((t) => (
+          <button key={t.id} onClick={() => setMode(t.id)} className="rc-btn" style={{ flex: 1, fontSize: 13, padding: "9px 6px", borderRadius: 12, border: `2px solid ${PALETTE.ink}`, background: mode === t.id ? PALETTE.tomato : PALETTE.card, color: mode === t.id ? "#fff" : PALETTE.ink, cursor: "pointer", fontWeight: 700 }}>
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {mode === "file" && (
+        <>
+          <p style={{ fontSize: 13, color: PALETTE.inkSoft, margin: 0, lineHeight: 1.5 }}>
+            Scegli il file di testo compilato con il modello, oppure incolla direttamente il contenuto qui sotto.
+          </p>
+          <button onClick={() => fileRef.current && fileRef.current.click()} className="rc-btn" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "11px 16px", borderRadius: 12, border: `2.5px solid ${PALETTE.ink}`, background: PALETTE.basil, color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", boxShadow: `3px 3px 0 ${PALETTE.ink}` }}>
+            Scegli file
+          </button>
+          <input ref={fileRef} type="file" accept=".txt,text/plain" style={{ display: "none" }} onChange={leggiFile} />
+          <textarea value={fileText} onChange={(e) => setFileText(e.target.value)} placeholder={"Titolo: ...\nCategoria: primi\n\nIngredienti:\n- Farina: 300 g\n\nPassaggi:\n1. ... (10 min)\n\n==="} rows={8} style={{ width: "100%", border: `2px solid ${PALETTE.ink}`, borderRadius: 12, background: PALETTE.card, padding: "12px 14px", fontSize: 12.5, color: PALETTE.ink, resize: "vertical", boxSizing: "border-box", fontFamily: "monospace" }} />
+          {importMsg && <p style={{ fontSize: 12.5, color: PALETTE.tomatoDeep, margin: 0, fontWeight: 600 }}>{importMsg}</p>}
+          <button onClick={importa} className="rc-btn" style={{ fontSize: 14, padding: "12px 16px", borderRadius: 14, border: `2.5px solid ${PALETTE.ink}`, background: PALETTE.tomato, color: "#fff", cursor: "pointer", fontWeight: 700, boxShadow: `3px 3px 0 ${PALETTE.ink}` }}>
+            Importa ricette
+          </button>
+        </>
+      )}
+
+      {mode === "manuale" && (
+        <>
       <CoverPicker value={cover} onChange={setCover} />
 
       <input placeholder="Titolo della ricetta" value={title} onChange={(e) => setTitle(e.target.value)} style={inputStyle} />
@@ -753,6 +863,8 @@ function AddRecipePanel({ onClose, onSave }) {
 
       {error && <p style={{ fontSize: 12, color: PALETTE.tomato, margin: 0, fontWeight: 600 }}>{error}</p>}
       <button onClick={save} className="rc-btn" style={{ fontSize: 14, padding: "12px 16px", borderRadius: 14, border: `2.5px solid ${PALETTE.ink}`, background: PALETTE.tomato, color: "#fff", cursor: "pointer", fontWeight: 700, boxShadow: `3px 3px 0 ${PALETTE.ink}` }}>Salva nel ricettario</button>
+        </>
+      )}
     </div>
   );
 }
@@ -903,6 +1015,17 @@ export default function App() {
     setView("list");
   }
 
+  async function saveManyRecipes(lista) {
+    const righe = lista.map((data) => ({
+      title: data.title, subtitle: data.subtitle, time: data.time, base_servings: data.baseServings,
+      category: data.category, cover: data.cover, tags: data.tags, ingredients: data.ingredients, steps: data.steps, photos: [],
+    }));
+    const { data: inserted, error } = await supabase.from("recipes").insert(righe).select();
+    if (error || !inserted) return;
+    setRecipes((prev) => [...inserted.map(rowToRecipe), ...prev]);
+    setView("list");
+  }
+
   async function sendMessage(text) {
     await supabase.from("messages").insert({ sender: "me", text, device_id: deviceIdRef.current });
   }
@@ -972,7 +1095,7 @@ export default function App() {
           </div>
         )}
 
-        {view === "add" && <AddRecipePanel onClose={() => setView("list")} onSave={saveNewRecipe} />}
+        {view === "add" && <AddRecipePanel onClose={() => setView("list")} onSave={saveNewRecipe} onSaveMany={saveManyRecipes} />}
         {view === "detail" && selected && <RecipeDetail recipe={selected} onBack={backToList} onAddPhoto={addPhoto} />}
 
         {tab === "chat" && view === "list" && (
