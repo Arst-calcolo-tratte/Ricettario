@@ -78,6 +78,7 @@ const FONTS = (
     .rc-chat-nudge { animation: chatNudge 1.8s ease-in-out infinite; }
     .rc-notification-in { animation: notificationIn .35s cubic-bezier(.2,.8,.3,1) both; }
     .rc-nav-item { position:relative; overflow:visible; }
+    .rc-bottom-nav { position:fixed; left:50%; bottom:max(10px, env(safe-area-inset-bottom)); transform:translateX(-50%); width:min(948px, calc(100vw - 32px)); z-index:1000; box-sizing:border-box; }
     .rc-nav-item::before { content:''; position:absolute; inset:3px 10px 1px; border-radius:18px; background:transparent; transition:background .2s ease, transform .2s ease; z-index:0; }
     .rc-nav-item.rc-nav-active::before { background: rgba(234,69,48,.10); transform:scale(1.02); }
     .rc-nav-content { position:relative; z-index:1; }
@@ -1293,7 +1294,7 @@ export default function App() {
   const catRecipes = openCategory ? recipes.filter(r => r.category === openCategory) : [];
 
   return (
-    <div className="rc-app" style={{ background: PALETTE.bg, minHeight: 500, borderRadius: 24, padding: "18px 18px 0", maxWidth: 380, margin: "0 auto", position: "relative", overflow: "hidden", boxSizing: "border-box" }}>
+    <div className="rc-app" style={{ background: PALETTE.bg, minHeight: 500, borderRadius: 24, padding: "18px 18px 112px", maxWidth: 380, margin: "0 auto", position: "relative", overflow: "hidden", boxSizing: "border-box" }}>
       {FONTS}
       <Blob color={PALETTE.tomato} size={90} top="-20px" left="-20px" delay="0s" />
       <Blob color={PALETTE.saffron} size={70} top="150px" left="300px" delay="1.5s" />
@@ -1370,7 +1371,7 @@ export default function App() {
         )}
       </div>
 
-      <div className="rc-sans" style={{ position:"sticky", bottom:0, zIndex:20, display:"flex", marginTop:20, padding:"8px 6px 10px", gap:5, background:"rgba(255,246,230,.96)", backdropFilter:"blur(12px)", border:`2px solid ${PALETTE.ink}`, borderRadius:"22px 22px 0 0", boxShadow:`0 -6px 18px rgba(42,29,16,.08)` }}>
+      <div className="rc-sans rc-bottom-nav" style={{ display:"flex", padding:"8px 6px 10px", gap:5, background:"rgba(255,246,230,.96)", backdropFilter:"blur(16px)", WebkitBackdropFilter:"blur(16px)", border:`2px solid ${PALETTE.ink}`, borderRadius:"22px", boxShadow:`0 -6px 22px rgba(42,29,16,.14)` }}>
         {[{ id:"ricette", label:"Ricette", icon:"book", accent:PALETTE.tomato }, { id:"preferiti", label:"Preferite", icon:"heart", accent:PALETTE.saffronDeep }, { id:"chat", label:"Chat", icon:"message", accent:PALETTE.basil }].map((t) => {
           const active = tab === t.id;
           return <button key={t.id} onClick={() => { setTab(t.id); setView("list"); setOpenCategory(null); setQuery(""); setFilterCategory("tutte"); if (t.id === "chat") markChatSeen(); }} className={`rc-btn rc-nav-item ${active ? "rc-nav-active" : ""}`} style={{ flex:1, minHeight:56, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:3, background:"transparent", border:"none", cursor:"pointer", color:active ? t.accent : PALETTE.inkSoft, borderRadius:18 }}>
