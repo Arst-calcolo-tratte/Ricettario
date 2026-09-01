@@ -362,14 +362,25 @@ function TagPill({ tag, i }) {
   );
 }
 
+function isCustomCover(value) {
+  return typeof value === "string" && (value.startsWith("data:image/") || value.startsWith("blob:") || value.startsWith("https://") || value.startsWith("http://"));
+}
+
+function CoverVisual({ recipe, className = "", style = {} }) {
+  if (isCustomCover(recipe?.cover)) {
+    return <img className={className} src={recipe.cover} alt="" style={{ width:"100%", height:"100%", objectFit:"cover", display:"block", ...style }} />;
+  }
+  const Art = COVER_ART[recipe?.cover] || COVER_ART.culurgiones;
+  return <Art className={className} style={style} />;
+}
+
 function FeaturedCard({ recipe, onOpen }) {
-  const Art = COVER_ART[recipe.cover];
-  const color = COVER_COLOR[recipe.cover];
+  const color = COVER_COLOR[recipe.cover] || PALETTE.tomato;
   return (
     <div className="rc-pearl-bg" style={{ borderRadius: 24, padding: "10px", marginBottom: 26 }}>
       <button onClick={() => onOpen(recipe)} className="rc-sans rc-card rc-fadeup" style={{ width: "100%", textAlign: "left", background: PALETTE.card, border: `3px solid ${PALETTE.ink}`, borderRadius: 18, overflow: "hidden", cursor: "pointer", padding: 0, boxShadow: `0 14px 26px -10px rgba(50,10,50,0.55)`, transform: "rotate(-0.4deg)" }}>
         <div style={{ height: 150, position: "relative" }}>
-          <Art />
+          <CoverVisual recipe={recipe} />
           <Sparkle x="14px" y="14px" size={14} delay="0s" />
           <span className="rc-sans" style={{ position: "absolute", top: 12, right: -6, fontSize: 11, fontWeight: 700, letterSpacing: 0.3, color: "#fff", background: PALETTE.ink, padding: "5px 16px", transform: "rotate(4deg)" }}>IN EVIDENZA</span>
         </div>
@@ -388,14 +399,13 @@ function FeaturedCard({ recipe, onOpen }) {
 }
 
 function RecipeCard({ recipe, onOpen, idx, isFavorite, onToggleFavorite }) {
-  const Art = COVER_ART[recipe.cover];
-  const color = COVER_COLOR[recipe.cover];
+  const color = COVER_COLOR[recipe.cover] || PALETTE.tomato;
   const rot = idx % 2 === 0 ? -0.5 : 0.5;
   const cat = CATEGORIES.find(c => c.id === recipe.category);
   return (
     <article className="rc-card rc-fadeup" style={{ position: "relative", background: PALETTE.card, border: `2.5px solid ${PALETTE.ink}`, borderRadius: 18, overflow: "hidden", boxShadow: `4px 4px 0 ${color}`, transform: `rotate(${rot}deg)`, animationDelay: `${idx * 0.05 + 0.05}s` }}>
       <button onClick={() => onOpen(recipe)} aria-label={`Apri ${recipe.title}`} style={{ width: "100%", display: "block", textAlign: "left", background: "transparent", border: "none", cursor: "pointer", padding: 0 }}>
-        <div style={{ height: 132, position: "relative", borderBottom: `2.5px solid ${PALETTE.ink}` }}><Art /></div>
+        <div style={{ height: 132, position: "relative", borderBottom: `2.5px solid ${PALETTE.ink}` }}><CoverVisual recipe={recipe} /></div>
         <div style={{ padding: "12px 14px 14px" }}>
           <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
             <div style={{ flex: 1, minWidth: 0 }}>
@@ -616,8 +626,7 @@ function RecipeDetail({ recipe, onBack, onAddPhoto, onSetCover, onDeletePhoto, o
   const [servings, setServings] = useState(recipe.baseServings);
   const [ingredients, setIngredients] = useState(recipe.ingredients);
   const [cookMode, setCookMode] = useState(false);
-  const Art = COVER_ART[recipe.cover];
-  const color = COVER_COLOR[recipe.cover];
+  const color = COVER_COLOR[recipe.cover] || PALETTE.tomato;
   function scaleServings(delta) { const next = Math.max(1, servings + delta); const factor = next / servings; setIngredients(prev => prev.map(ing => ing.locked ? ing : { ...ing, amount: round(ing.amount * factor) })); setServings(next); }
   function handleAmountChange(id, value) { const num = parseFloat(value); if (isNaN(num) || num <= 0) return; const current = ingredients.find(i => i.id === id); if (!current || current.amount === 0) return; const factor = num / current.amount; setIngredients(prev => prev.map(ing => ing.id === id ? { ...ing, amount: num } : ing.locked ? ing : { ...ing, amount: round(ing.amount * factor) })); }
   function toggleLock(id) { setIngredients(prev => prev.map(ing => ing.id === id ? { ...ing, locked: !ing.locked } : ing)); }
@@ -625,7 +634,7 @@ function RecipeDetail({ recipe, onBack, onAddPhoto, onSetCover, onDeletePhoto, o
   const tabIdx = tabs.findIndex(t => t.id === tab);
   return (<><div className="rc-sans rc-fadeup">
     <div style={{ height: 190, borderRadius: 24, overflow: "hidden", position: "relative", marginBottom: 16, border: `3px solid ${PALETTE.ink}`, boxShadow: `6px 6px 0 ${color}` }}>
-      {recipe.photos.length > 0 ? <img src={recipe.photos[0]} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <Art />}
+      {recipe.photos.length > 0 ? <img src={recipe.photos[0]} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <CoverVisual recipe={recipe} />}
       <div style={{ position:"absolute", inset:0, background:"linear-gradient(180deg, rgba(0,0,0,.12), transparent 45%, rgba(0,0,0,.22))", pointerEvents:"none" }} />
       <button onClick={onBack} className="rc-btn" aria-label="Torna alle ricette" style={{ position: "absolute", top: 12, left: 12, width: 38, height: 38, borderRadius: "50%", border: `2px solid ${PALETTE.ink}`, background: "#fff", color: PALETTE.ink, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}><Icon name="arrowLeft" size={17} /></button>
       <div style={{ position:"absolute", top:12, right:12, display:"flex", gap:7 }}>
@@ -702,23 +711,60 @@ function ChatPanel({ messages, onSend, onDelete }) {
 }
 
 function CoverPicker({ value, onChange }) {
+  const inputRef = useRef(null);
+  const [busy, setBusy] = useState(false);
+  async function chooseImage(e) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (!file.type.startsWith("image/")) return;
+    setBusy(true);
+    try {
+      const data = await compressImage(file, 1400, 0.82);
+      onChange(data);
+    } finally { setBusy(false); }
+  }
+  const custom = isCustomCover(value);
   return (
     <div>
-      <span className="rc-sans" style={{ fontSize: 12, fontWeight: 700, color: PALETTE.inkSoft }}>Copertina</span>
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:10 }}>
+        <span className="rc-sans" style={{ fontSize: 12, fontWeight: 800, color: PALETTE.inkSoft }}>Immagine di copertina</span>
+        <button type="button" onClick={() => inputRef.current?.click()} className="rc-btn" style={{ border:`2px solid ${PALETTE.ink}`, background:PALETTE.saffron, color:PALETTE.ink, borderRadius:12, padding:"7px 10px", fontSize:11, fontWeight:800, cursor:"pointer" }}>{busy ? "Elaboro…" : "📷 Scegli foto"}</button>
+        <input ref={inputRef} type="file" accept="image/*" style={{display:"none"}} onChange={chooseImage}/>
+      </div>
+      {custom && <div style={{ marginTop:8, height:120, borderRadius:14, overflow:"hidden", border:`2px solid ${PALETTE.ink}`, boxShadow:`4px 4px 0 ${PALETTE.tomato}` }}><img src={value} alt="Anteprima copertina" style={{width:"100%",height:"100%",objectFit:"cover"}}/></div>}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, marginTop: 8, maxHeight: 220, overflowY: "auto" }}>
         {Object.keys(COVER_ART).map((key) => {
           const Art = COVER_ART[key];
           const selected = value === key;
-          return (
-            <button key={key} onClick={() => onChange(key)} className="rc-btn" aria-label={COVER_LABELS[key]} style={{ height: 46, borderRadius: 10, overflow: "hidden", border: selected ? `3px solid ${PALETTE.ink}` : `2px solid ${PALETTE.border}`, padding: 0, cursor: "pointer", opacity: selected ? 1 : 0.75 }}>
-              <Art />
-            </button>
-          );
+          return <button type="button" key={key} onClick={() => onChange(key)} className="rc-btn" aria-label={COVER_LABELS[key]} style={{ height: 46, borderRadius: 10, overflow: "hidden", border: selected ? `3px solid ${PALETTE.ink}` : `2px solid ${PALETTE.border}`, padding: 0, cursor: "pointer", opacity: selected ? 1 : 0.75 }}><Art /></button>;
         })}
       </div>
-      <p style={{ fontSize: 11, color: PALETTE.inkSoft, margin: "6px 0 0" }}>{COVER_LABELS[value]}</p>
+      <p style={{ fontSize: 11, color: PALETTE.inkSoft, margin: "6px 0 0" }}>{custom ? "Foto personale" : COVER_LABELS[value]}</p>
     </div>
   );
+}
+
+function compressImage(file, maxSize = 1400, quality = 0.82) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = reject;
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = reject;
+      img.onload = () => {
+        const scale = Math.min(1, maxSize / Math.max(img.width, img.height));
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.max(1, Math.round(img.width * scale));
+        canvas.height = Math.max(1, Math.round(img.height * scale));
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL("image/jpeg", quality));
+      };
+      img.src = String(reader.result || "");
+    };
+    reader.readAsDataURL(file);
+  });
 }
 
 function parseNumberToken(v) { const x = String(v || "").trim().replace(",", "."); if (/^\d+\s*\/\s*\d+$/.test(x)) { const [a,b] = x.split("/").map(Number); return b ? a/b : 0; } const n = parseFloat(x); return Number.isFinite(n) ? n : 0; }
@@ -769,6 +815,7 @@ function AddRecipePanel({ onClose, onSave, onSaveMany, initialRecipe = null, onU
   const [ingredients, setIngredients] = useState(initialRecipe?.ingredients?.map(({id,locked,...ing}) => ({...ing})) || [{ name: "", amount: "", unit: "" }]);
   const [steps, setSteps] = useState(initialRecipe?.steps?.map(s => ({ text:s.text || "", minutes:s.seconds ? Math.round(s.seconds/60) : "" })) || [{ text: "", minutes: "" }]);
   const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
 
   function updateIng(i, field, value) { setIngredients((prev) => prev.map((row, idx) => (idx === i ? { ...row, [field]: value } : row))); }
   function addIng() { setIngredients((prev) => [...prev, { name: "", amount: "", unit: "" }]); }
@@ -777,7 +824,7 @@ function AddRecipePanel({ onClose, onSave, onSaveMany, initialRecipe = null, onU
   function addStep() { setSteps((prev) => [...prev, { text: "", minutes: "" }]); }
   function removeStep(i) { setSteps((prev) => prev.filter((_, idx) => idx !== i)); }
 
-  function save() {
+  async function save() {
     if (!title.trim()) { setError("Dai un titolo alla ricetta."); return; }
     const cleanIngredients = ingredients.filter((r) => r.name.trim());
     const cleanSteps = steps.filter((r) => r.text.trim());
@@ -790,7 +837,14 @@ function AddRecipePanel({ onClose, onSave, onSaveMany, initialRecipe = null, onU
       ingredients: cleanIngredients.map((r) => ({ name: r.name.trim(), amount: parseFloat(r.amount) || 0, unit: r.unit.trim() || null })),
       steps: cleanSteps.map((r) => ({ text: r.text.trim(), seconds: r.minutes ? parseInt(r.minutes, 10) * 60 : null })),
     };
-    if (editing) onUpdate(payload); else onSave(payload);
+    setSaving(true);
+    try {
+      const result = editing ? await onUpdate(payload) : await onSave(payload);
+      if (result && result.ok === false) setError(result.error || "Non riesco a salvare le modifiche.");
+      else if (result === false) setError("Non riesco a salvare le modifiche.");
+    } catch (e) {
+      setError(e?.message || "Errore durante il salvataggio.");
+    } finally { setSaving(false); }
   }
 
   const inputStyle = { width: "100%", height: 38, border: `2px solid ${PALETTE.ink}`, borderRadius: 10, background: PALETTE.card, padding: "0 12px", fontSize: 13, color: PALETTE.ink, boxSizing: "border-box" };
@@ -902,8 +956,8 @@ function AddRecipePanel({ onClose, onSave, onSaveMany, initialRecipe = null, onU
         <button onClick={addStep} className="rc-btn" style={{ marginTop: 8, fontSize: 12, padding: "7px 12px", borderRadius: 10, border: `2px dashed ${PALETTE.border}`, background: "transparent", color: PALETTE.inkSoft, cursor: "pointer", fontWeight: 600 }}>+ Aggiungi passaggio</button>
       </div>
 
-      {error && <p style={{ fontSize: 12, color: PALETTE.tomato, margin: 0, fontWeight: 600 }}>{error}</p>}
-      <button onClick={save} className="rc-btn" style={{ fontSize: 14, padding: "12px 16px", borderRadius: 14, border: `2.5px solid ${PALETTE.ink}`, background: PALETTE.tomato, color: "#fff", cursor: "pointer", fontWeight: 700, boxShadow: `3px 3px 0 ${PALETTE.ink}` }}>{editing ? "Salva modifiche" : "Salva nel ricettario"}</button>
+      {error && <p style={{ fontSize: 12, color: PALETTE.tomato, margin: 0, fontWeight: 700, background:PALETTE.tomatoSoft, border:`1px solid ${PALETTE.tomato}`, borderRadius:10, padding:10 }}>{error}</p>}
+      <button onClick={save} className="rc-btn" style={{ fontSize: 14, padding: "12px 16px", borderRadius: 14, border: `2.5px solid ${PALETTE.ink}`, background: PALETTE.tomato, color: "#fff", cursor: "pointer", fontWeight: 700, boxShadow: `3px 3px 0 ${PALETTE.ink}` }}>{saving ? "Salvataggio…" : (editing ? "Salva modifiche" : "Salva nel ricettario")}</button>
         </>
       )}
     </div>
@@ -1095,9 +1149,10 @@ export default function App() {
       })
       .select()
       .single();
-    if (error || !inserted) { setLoadError(error?.message || "Non riesco a salvare la ricetta."); return; }
+    if (error || !inserted) { const msg = error?.message || "Non riesco a salvare la ricetta."; setLoadError(msg); return { ok:false, error:msg }; }
     setRecipes((prev) => [rowToRecipe(inserted), ...prev]);
     setView("list");
+    return { ok:true };
   }
 
   async function updateRecipe(recipeId, data) {
@@ -1105,11 +1160,12 @@ export default function App() {
       title: data.title, subtitle: data.subtitle, time: data.time, base_servings: data.baseServings,
       category: data.category, cover: data.cover, tags: data.tags, ingredients: data.ingredients, steps: data.steps,
     }).eq("id", recipeId).select().single();
-    if (error || !updated) { setLoadError(error?.message || "Non riesco a salvare le modifiche."); return; }
+    if (error || !updated) { const msg = error?.message || "Non riesco a salvare le modifiche. Verifica anche le autorizzazioni di Supabase (RLS)."; setLoadError(msg); return { ok:false, error:msg }; }
     setRecipes(prev => prev.map(r => r.id === recipeId ? rowToRecipe({ ...updated, photos: r.photos }) : r));
     setEditingRecipeId(null);
     setSelectedId(recipeId);
     setView("detail");
+    return { ok:true };
   }
 
   async function saveManyRecipes(lista) {
