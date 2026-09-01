@@ -977,7 +977,6 @@ function AddRecipePanel({ onClose, onSave, onSaveMany, initialRecipe = null, onU
         <button onClick={addStep} className="rc-btn" style={{ marginTop: 8, fontSize: 12, padding: "7px 12px", borderRadius: 10, border: `2px dashed ${PALETTE.border}`, background: "transparent", color: PALETTE.inkSoft, cursor: "pointer", fontWeight: 600 }}>+ Aggiungi passaggio</button>
       </div>
 
-      <div style={{ fontSize: 11, color: PALETTE.inkSoft, background: PALETTE.card, border:`1px dashed ${PALETTE.border}`, borderRadius:10, padding:"8px 10px" }}>DEBUG: {debug}</div>
       {error && <p style={{ fontSize: 12, color: PALETTE.tomato, margin: 0, fontWeight: 700, background:PALETTE.tomatoSoft, border:`1px solid ${PALETTE.tomato}`, borderRadius:10, padding:10 }}>{error}</p>}
       <button type="button" disabled={saving} onClick={save} className="rc-btn" style={{ fontSize: 14, padding: "12px 16px", borderRadius: 14, border: `2.5px solid ${PALETTE.ink}`, background: PALETTE.tomato, color: "#fff", cursor: "pointer", fontWeight: 700, boxShadow: `3px 3px 0 ${PALETTE.ink}` }}>{saving ? "Salvataggio…" : (editing ? "Salva modifiche" : "Salva nel ricettario")}</button>
         </>
