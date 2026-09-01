@@ -70,6 +70,18 @@ const FONTS = (
     }
     .rc-twinkle { animation: twinkle 1.8s ease-in-out infinite; }
     .rc-sizzle { animation: sizzle 1.4s ease-in-out infinite; }
+    @keyframes chatNudge { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-2px); } }
+    @keyframes notificationIn { from { opacity:0; transform:translateY(-12px) scale(.98); } to { opacity:1; transform:translateY(0) scale(1); } }
+    .rc-chat-scroll { scrollbar-width: thin; scrollbar-color: #EA4530 transparent; }
+    .rc-chat-scroll::-webkit-scrollbar { width: 6px; }
+    .rc-chat-scroll::-webkit-scrollbar-thumb { background: #EA4530; border-radius: 10px; }
+    .rc-chat-nudge { animation: chatNudge 1.8s ease-in-out infinite; }
+    .rc-notification-in { animation: notificationIn .35s cubic-bezier(.2,.8,.3,1) both; }
+    .rc-nav-item { position:relative; overflow:visible; }
+    .rc-nav-item::before { content:''; position:absolute; inset:3px 10px 1px; border-radius:18px; background:transparent; transition:background .2s ease, transform .2s ease; z-index:0; }
+    .rc-nav-item.rc-nav-active::before { background: rgba(234,69,48,.10); transform:scale(1.02); }
+    .rc-nav-content { position:relative; z-index:1; }
+  
   `}</style>
 );
 
@@ -111,6 +123,8 @@ function Icon({ name, size = 18, color = "currentColor", sw = 2.2 }) {
     case "search": return <svg {...p}><circle cx="11" cy="11" r="7" /><path d="M21 21l-4.3-4.3" /></svg>;
     case "folder": return <svg {...p}><path d="M4 6h6l2 2h8v11H4z" /></svg>;
     case "heart": return <svg {...p}><path d="M20.8 8.7c0 5-8.8 10.3-8.8 10.3S3.2 13.7 3.2 8.7A4.6 4.6 0 0 1 12 6.2a4.6 4.6 0 0 1 8.8 2.5Z" /></svg>;
+    case "trash": return <svg {...p}><path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13M10 11v5M14 11v5" /></svg>;
+    case "bell": return <svg {...p}><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" /><path d="M10 21h4" /></svg>;
     default: return null;
   }
 }
@@ -620,18 +634,39 @@ function RecipeDetail({ recipe, onBack, onAddPhoto, isFavorite, onToggleFavorite
   </div>{cookMode && <CookMode recipe={recipe} onClose={() => setCookMode(false)} />}</>);
 }
 
-function ChatBubble({ m, i }) {
+function ChatBubble({ m, i, onDelete }) {
   const mine = m.from === "me";
   return (
-    <div className="rc-fadeup" style={{ alignSelf: mine ? "flex-end" : "flex-start", maxWidth: "78%", background: mine ? PALETTE.tomato : PALETTE.card, border: `2px solid ${PALETTE.ink}`, borderRadius: mine ? "16px 16px 4px 16px" : "16px 16px 16px 4px", padding: "10px 14px", animationDelay: `${i * 0.05}s` }}>
-      <p style={{ fontSize: 14, color: mine ? "#fff" : PALETTE.ink, margin: 0, fontWeight: 500 }}>{m.text}</p>
-      <p style={{ fontSize: 10, color: mine ? "rgba(255,255,255,0.85)" : PALETTE.inkSoft, margin: "4px 0 0" }}>{m.time}</p>
+    <div className="rc-fadeup" style={{ alignSelf: mine ? "flex-end" : "flex-start", maxWidth: "84%", display:"flex", flexDirection:"column", alignItems: mine ? "flex-end" : "flex-start", animationDelay: `${Math.min(i,8) * 0.03}s` }}>
+      <div style={{ position:"relative", background: mine ? PALETTE.tomato : PALETTE.card, border: `2px solid ${PALETTE.ink}`, borderRadius: mine ? "18px 18px 5px 18px" : "18px 18px 18px 5px", padding: "10px 12px 9px", boxShadow: mine ? `3px 3px 0 ${PALETTE.tomatoDeep}` : `3px 3px 0 ${PALETTE.border}` }}>
+        <p style={{ fontSize: 14, lineHeight:1.45, color: mine ? "#fff" : PALETTE.ink, margin: 0, fontWeight: 500, whiteSpace:"pre-wrap", overflowWrap:"anywhere" }}>{m.text}</p>
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:10, marginTop:5 }}>
+          <p style={{ fontSize: 10, color: mine ? "rgba(255,255,255,0.82)" : PALETTE.inkSoft, margin:0 }}>{m.time}</p>
+          {mine && <button onClick={() => onDelete(m.id)} aria-label="Cancella messaggio" className="rc-btn" style={{ border:0, background:"transparent", color:"rgba(255,255,255,.82)", padding:2, cursor:"pointer", display:"flex" }}><Icon name="trash" size={13} /></button>}
+        </div>
+      </div>
     </div>
   );
 }
 
-function ChatPanel({ messages, onSend }) {
+function ChatPanel({ messages, onSend, onDelete }) {
   const [draft, setDraft] = useState("");
+  const scrollRef = useRef(null);
+  const [showJump, setShowJump] = useState(false);
+
+  function scrollToBottom(smooth = true) {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollTo({ top: el.scrollHeight, behavior: smooth ? "smooth" : "auto" });
+    setShowJump(false);
+  }
+  useEffect(() => { requestAnimationFrame(() => scrollToBottom(false)); }, []);
+  useEffect(() => { requestAnimationFrame(() => scrollToBottom(true)); }, [messages.length]);
+  function onScroll() {
+    const el = scrollRef.current;
+    if (!el) return;
+    setShowJump(el.scrollHeight - el.scrollTop - el.clientHeight > 100);
+  }
   function send() {
     const text = draft.trim();
     if (!text) return;
@@ -639,13 +674,15 @@ function ChatPanel({ messages, onSend }) {
     setDraft("");
   }
   return (
-    <div className="rc-sans" style={{ display: "flex", flexDirection: "column", gap: 10, padding: "4px 0 8px" }}>
-      {messages.map((m, i) => <ChatBubble key={i} m={m} i={i} />)}
-      <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-        <input value={draft} onChange={(e) => setDraft(e.target.value)} onKeyDown={(e) => e.key === "Enter" && send()} placeholder="Scrivi un messaggio" style={{ flex: 1, height: 42, borderRadius: 21, border: `2px solid ${PALETTE.ink}`, background: PALETTE.card, padding: "0 16px", fontSize: 14, color: PALETTE.ink }} />
-        <button onClick={send} className="rc-btn" aria-label="Invia messaggio" style={{ width: 42, height: 42, borderRadius: "50%", border: `2px solid ${PALETTE.ink}`, background: PALETTE.tomato, color: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-          <Icon name="arrowUp" size={17} />
-        </button>
+    <div className="rc-sans" style={{ display:"flex", flexDirection:"column", gap:10 }}>
+      <div ref={scrollRef} onScroll={onScroll} className="rc-chat-scroll" style={{ height:"min(58vh, 520px)", minHeight:320, overflowY:"auto", display:"flex", flexDirection:"column", gap:10, padding:"6px 5px 10px 2px", scrollBehavior:"smooth" }}>
+        {messages.length === 0 && <div style={{ margin:"auto", textAlign:"center", padding:24, color:PALETTE.inkSoft }}><div style={{ fontSize:38 }}>💬</div><div className="rc-display" style={{ fontSize:20, color:PALETTE.ink, marginTop:6 }}>Nessun messaggio ancora</div><p style={{ fontSize:12, margin:"5px 0 0" }}>Scrivi qualcosa per iniziare la conversazione.</p></div>}
+        {messages.map((m, i) => <ChatBubble key={m.id || i} m={m} i={i} onDelete={onDelete} />)}
+      </div>
+      {showJump && <button onClick={() => scrollToBottom()} className="rc-btn rc-chat-nudge" style={{ alignSelf:"center", margin:"-2px 0 0", border:`2px solid ${PALETTE.ink}`, background:PALETTE.saffron, color:PALETTE.ink, borderRadius:18, padding:"6px 11px", fontSize:11, fontWeight:800, cursor:"pointer" }}>↓ Vai agli ultimi messaggi</button>}
+      <div style={{ display:"flex", gap:8, marginTop:2, position:"sticky", bottom:0, background:PALETTE.bg, paddingTop:6 }}>
+        <input value={draft} onChange={(e) => setDraft(e.target.value)} onKeyDown={(e) => e.key === "Enter" && send()} placeholder="Scrivi un messaggio…" style={{ flex:1, height:46, borderRadius:23, border:`2px solid ${PALETTE.ink}`, background:PALETTE.card, padding:"0 16px", fontSize:14, color:PALETTE.ink, outline:"none", boxSizing:"border-box" }} />
+        <button onClick={send} className="rc-btn" aria-label="Invia messaggio" style={{ width:46, height:46, borderRadius:"50%", border:`2px solid ${PALETTE.ink}`, background:PALETTE.tomato, color:"#fff", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, boxShadow:`3px 3px 0 ${PALETTE.tomatoDeep}` }}><Icon name="arrowUp" size={18} /></button>
       </div>
     </div>
   );
@@ -913,11 +950,14 @@ export default function App() {
   const [openCategory, setOpenCategory] = useState(null);
   const [query, setQuery] = useState("");
   const [messages, setMessages] = useState([]);
+  const [unreadMessages, setUnreadMessages] = useState(0);
+  const [newMessageNotice, setNewMessageNotice] = useState(null);
   const [notifStatus, setNotifStatus] = useState("unknown");
   const [notifDebug, setNotifDebug] = useState("");
   const [favorites, setFavorites] = useState(() => { try { return JSON.parse(localStorage.getItem("ricettario_favorites") || "[]"); } catch { return []; } });
   const [filterCategory, setFilterCategory] = useState("tutte");
   const deviceIdRef = useRef(getDeviceId());
+  const lastSeenMessageRef = useRef(localStorage.getItem("ricettario_chat_last_seen") || "");
 
   useEffect(() => {
     const deviceId = deviceIdRef.current;
@@ -932,7 +972,14 @@ export default function App() {
 
     async function loadMessages() {
       const { data } = await supabase.from("messages").select("*").order("created_at", { ascending: true });
-      setMessages((data || []).map((m) => ({ id: m.id, from: m.device_id === deviceId ? "me" : "them", text: m.text, time: new Date(m.created_at).toLocaleString("it-IT", { hour: "2-digit", minute: "2-digit" }) })));
+      const rows = data || [];
+      const mapped = rows.map((m) => ({ id: m.id, from: m.device_id === deviceId ? "me" : "them", text: m.text, time: new Date(m.created_at).toLocaleString("it-IT", { hour: "2-digit", minute: "2-digit" }), createdAt: m.created_at, deviceId: m.device_id }));
+      setMessages(mapped);
+      const unseen = mapped.filter(m => m.from === "them" && (!lastSeenMessageRef.current || new Date(m.createdAt) > new Date(lastSeenMessageRef.current)));
+      if (unseen.length) {
+        setUnreadMessages(unseen.length);
+        setNewMessageNotice(unseen[unseen.length - 1]);
+      }
     }
     loadMessages();
 
@@ -940,7 +987,12 @@ export default function App() {
       .channel("messages-realtime")
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, (payload) => {
         const m = payload.new;
-        setMessages((prev) => (prev.some((x) => x.id === m.id) ? prev : [...prev, { id: m.id, from: m.device_id === deviceId ? "me" : "them", text: m.text, time: new Date(m.created_at).toLocaleString("it-IT", { hour: "2-digit", minute: "2-digit" }) }]));
+        const incoming = { id: m.id, from: m.device_id === deviceId ? "me" : "them", text: m.text, time: new Date(m.created_at).toLocaleString("it-IT", { hour: "2-digit", minute: "2-digit" }), createdAt: m.created_at, deviceId: m.device_id };
+        setMessages((prev) => (prev.some((x) => x.id === m.id) ? prev : [...prev, incoming]));
+        if (incoming.from === "them") {
+          setUnreadMessages(prev => prev + 1);
+          setNewMessageNotice(incoming);
+        }
       })
       .subscribe();
 
@@ -1020,6 +1072,24 @@ export default function App() {
     setView("list");
   }
 
+  function markChatSeen() {
+    const latest = [...messages].reverse().find(m => m.createdAt);
+    if (latest) {
+      lastSeenMessageRef.current = latest.createdAt;
+      localStorage.setItem("ricettario_chat_last_seen", latest.createdAt);
+    }
+    setUnreadMessages(0);
+    setNewMessageNotice(null);
+  }
+
+  async function deleteMessage(id) {
+    const target = messages.find(m => m.id === id);
+    if (!target || target.from !== "me") return;
+    const { error } = await supabase.from("messages").delete().eq("id", id).eq("device_id", deviceIdRef.current);
+    if (error) { setNotifDebug("Non riesco a cancellare il messaggio: " + error.message); return; }
+    setMessages(prev => prev.filter(m => m.id !== id));
+  }
+
   async function sendMessage(text) {
     const { data, error } = await supabase.from("messages").insert({ sender: "me", text, device_id: deviceIdRef.current }).select().single();
     if (error) { setNotifDebug("Errore invio messaggio: " + error.message); return; }
@@ -1079,7 +1149,17 @@ export default function App() {
 
         {tab === "chat" && view === "list" && (
           <>
-            <h1 className="rc-display" style={{ fontSize: 27, fontWeight: 700, color: PALETTE.ink, margin: "10px 0 10px" }}>Chat</h1>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:10, margin:"10px 0 12px" }}>
+              <div><h1 className="rc-display" style={{ fontSize: 29, fontWeight: 700, color: PALETTE.ink, margin:0 }}>Chat</h1><p style={{ margin:"2px 0 0", fontSize:11, color:PALETTE.inkSoft }}>La nostra conversazione</p></div>
+              {unreadMessages > 0 && <button onClick={markChatSeen} className="rc-btn" style={{ border:`2px solid ${PALETTE.ink}`, background:PALETTE.tomato, color:"#fff", borderRadius:18, padding:"7px 10px", fontSize:11, fontWeight:800, cursor:"pointer" }}>{unreadMessages} nuovi</button>}
+            </div>
+            {newMessageNotice && tab === "chat" && (
+              <div className="rc-notification-in" style={{ display:"flex", alignItems:"center", gap:10, background:PALETTE.tomatoSoft, border:`2px solid ${PALETTE.tomato}`, borderRadius:16, padding:"10px 12px", marginBottom:12, cursor:"pointer" }} onClick={markChatSeen}>
+                <div className="rc-chat-nudge" style={{ width:36, height:36, borderRadius:"50%", background:PALETTE.tomato, color:"#fff", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}><Icon name="bell" size={18} color="#fff" /></div>
+                <div style={{ minWidth:0, flex:1 }}><div style={{ fontSize:11, fontWeight:800, color:PALETTE.tomatoDeep }}>Nuovo messaggio</div><div style={{ fontSize:12, color:PALETTE.ink, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{newMessageNotice.text}</div></div>
+                <Icon name="chevronRight" size={17} color={PALETTE.tomatoDeep} />
+              </div>
+            )}
             {notifStatus !== "attive" && (
               <button
                 onClick={enableNotifications}
@@ -1094,19 +1174,20 @@ export default function App() {
                 {notifDebug}
               </div>
             )}
-            <ChatPanel messages={messages} onSend={sendMessage} />
+            <ChatPanel messages={messages} onSend={sendMessage} onDelete={deleteMessage} />
           </>
         )}
       </div>
 
-      <div className="rc-sans" style={{ position: "relative", display: "flex", borderTop: `2px solid ${PALETTE.ink}`, marginTop: 20, padding: "12px 0 16px", gap: 8 }}>
-        {[{ id: "ricette", label: "Ricette", icon: "book" }, { id: "preferiti", label: "Preferite", icon: "heart" }, { id: "chat", label: "Chat", icon: "message" }].map((t) => (
-          <button key={t.id} onClick={() => { setTab(t.id); setView("list"); setOpenCategory(null); setQuery(""); setFilterCategory("tutte"); }} className="rc-btn" style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4, background: "transparent", border: "none", cursor: "pointer", color: tab === t.id ? PALETTE.tomato : PALETTE.inkSoft }}>
-            <Icon name={t.icon} size={21} />
-            <span style={{ fontSize: 11, fontWeight: tab === t.id ? 700 : 500 }}>{t.label}</span>
-            <div style={{ width: 5, height: 5, borderRadius: "50%", background: tab === t.id ? PALETTE.tomato : "transparent", transition: "background .2s ease" }} />
-          </button>
-        ))}
+      <div className="rc-sans" style={{ position:"sticky", bottom:0, zIndex:20, display:"flex", marginTop:20, padding:"8px 6px 10px", gap:5, background:"rgba(255,246,230,.96)", backdropFilter:"blur(12px)", border:`2px solid ${PALETTE.ink}`, borderRadius:"22px 22px 0 0", boxShadow:`0 -6px 18px rgba(42,29,16,.08)` }}>
+        {[{ id:"ricette", label:"Ricette", icon:"book", accent:PALETTE.tomato }, { id:"preferiti", label:"Preferite", icon:"heart", accent:PALETTE.saffronDeep }, { id:"chat", label:"Chat", icon:"message", accent:PALETTE.basil }].map((t) => {
+          const active = tab === t.id;
+          return <button key={t.id} onClick={() => { setTab(t.id); setView("list"); setOpenCategory(null); setQuery(""); setFilterCategory("tutte"); if (t.id === "chat") markChatSeen(); }} className={`rc-btn rc-nav-item ${active ? "rc-nav-active" : ""}`} style={{ flex:1, minHeight:56, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:3, background:"transparent", border:"none", cursor:"pointer", color:active ? t.accent : PALETTE.inkSoft, borderRadius:18 }}>
+            <span className="rc-nav-content" style={{ position:"relative", width:32, height:30, display:"flex", alignItems:"center", justifyContent:"center", borderRadius:12, background:active ? `${t.accent}18` : "transparent" }}><Icon name={t.icon} size={22} color={active ? t.accent : PALETTE.inkSoft} sw={active ? 2.6 : 2.1}/>{t.id === "chat" && unreadMessages > 0 && <span style={{ position:"absolute", right:-6, top:-6, minWidth:17, height:17, padding:"0 4px", borderRadius:10, background:PALETTE.tomato, color:"#fff", border:`2px solid ${PALETTE.bg}`, fontSize:9, fontWeight:900, display:"flex", alignItems:"center", justifyContent:"center" }}>{unreadMessages > 9 ? "9+" : unreadMessages}</span>}</span>
+            <span className="rc-nav-content" style={{ fontSize:11, fontWeight:active ? 800 : 600 }}>{t.label}</span>
+            <span className="rc-nav-content" style={{ width:22, height:3, borderRadius:4, background:active ? t.accent : "transparent", transition:"all .2s ease" }} />
+          </button>;
+        })}
       </div>
     </div>
   );
