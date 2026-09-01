@@ -120,6 +120,7 @@ function Icon({ name, size = 18, color = "currentColor", sw = 2.2 }) {
     case "refresh": return <svg {...p}><path d="M3.5 12a8.5 8.5 0 1 1 2.5 6" /><path d="M3.5 8v4.2h4.2" /></svg>;
     case "check": return <svg {...p}><path d="M5 13l4 4L19 7" /></svg>;
     case "pencil": return <svg {...p}><path d="M4 20l1-4 11-11 3 3-11 11-4 1z" /></svg>;
+    case "image": return <svg {...p}><rect x="4" y="5" width="16" height="14" rx="2" /><circle cx="9" cy="10" r="1.6" /><path d="M5.5 17l4.5-4 3 2.5 2-2 3.5 3.5" /></svg>;
     case "search": return <svg {...p}><circle cx="11" cy="11" r="7" /><path d="M21 21l-4.3-4.3" /></svg>;
     case "folder": return <svg {...p}><path d="M4 6h6l2 2h8v11H4z" /></svg>;
     case "heart": return <svg {...p}><path d="M20.8 8.7c0 5-8.8 10.3-8.8 10.3S3.2 13.7 3.2 8.7A4.6 4.6 0 0 1 12 6.2a4.6 4.6 0 0 1 8.8 2.5Z" /></svg>;
@@ -543,7 +544,7 @@ function StepsView({ steps }) {
   );
 }
 
-function PhotosView({ photos, onAdd }) {
+function PhotosView({ photos, onAdd, onSetCover, onDeletePhoto }) {
   const inputRef = useRef(null);
   const rotations = [-6, 4, -3, 5, -4, 3];
   function handleFile(e) {
@@ -566,8 +567,12 @@ function PhotosView({ photos, onAdd }) {
       ) : (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 18, padding: "4px 4px 8px" }}>
           {photos.map((p, i) => (
-            <div key={i} className="rc-photo" style={{ background: "#fff", padding: "8px 8px 20px", boxShadow: "0 8px 16px -6px rgba(42,29,16,0.35)", "--rot": `${rotations[i % 6]}deg`, transform: `rotate(${rotations[i % 6]}deg)`, borderRadius: 3, border: `2px solid ${PALETTE.ink}` }}>
+            <div key={i} className="rc-photo" style={{ position:"relative", background: "#fff", padding: "8px 8px 20px", boxShadow: "0 8px 16px -6px rgba(42,29,16,0.35)", "--rot": `${rotations[i % 6]}deg`, transform: `rotate(${rotations[i % 6]}deg)`, borderRadius: 3, border: `2px solid ${PALETTE.ink}` }}>
               <img src={p} alt="Foto del piatto" style={{ width: "100%", aspectRatio: "1", objectFit: "cover", display: "block" }} />
+              <div style={{ position:"absolute", left:8, right:8, bottom:4, display:"flex", alignItems:"center", justifyContent:"space-between", gap:6 }}>
+                <button onClick={() => onSetCover(i)} className="rc-btn" style={{ border:0, background:"transparent", color: i===0 ? PALETTE.tomato : PALETTE.inkSoft, fontSize:10, fontWeight:800, cursor:"pointer", padding:2 }}>{i===0 ? "★ Copertina" : "Usa come copertina"}</button>
+                <button onClick={() => onDeletePhoto(i)} className="rc-btn" aria-label="Elimina foto" style={{ border:0, background:"transparent", color:PALETTE.inkSoft, cursor:"pointer", display:"flex", padding:2 }}><Icon name="trash" size={13}/></button>
+              </div>
             </div>
           ))}
         </div>
@@ -606,7 +611,7 @@ function CookMode({ recipe, onClose }) {
   );
 }
 
-function RecipeDetail({ recipe, onBack, onAddPhoto, isFavorite, onToggleFavorite }) {
+function RecipeDetail({ recipe, onBack, onAddPhoto, onSetCover, onDeletePhoto, onEdit, isFavorite, onToggleFavorite }) {
   const [tab, setTab] = useState("ingredienti");
   const [servings, setServings] = useState(recipe.baseServings);
   const [ingredients, setIngredients] = useState(recipe.ingredients);
@@ -621,8 +626,16 @@ function RecipeDetail({ recipe, onBack, onAddPhoto, isFavorite, onToggleFavorite
   return (<><div className="rc-sans rc-fadeup">
     <div style={{ height: 190, borderRadius: 24, overflow: "hidden", position: "relative", marginBottom: 16, border: `3px solid ${PALETTE.ink}`, boxShadow: `6px 6px 0 ${color}` }}>
       {recipe.photos.length > 0 ? <img src={recipe.photos[0]} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <Art />}
+      <div style={{ position:"absolute", inset:0, background:"linear-gradient(180deg, rgba(0,0,0,.12), transparent 45%, rgba(0,0,0,.22))", pointerEvents:"none" }} />
       <button onClick={onBack} className="rc-btn" aria-label="Torna alle ricette" style={{ position: "absolute", top: 12, left: 12, width: 38, height: 38, borderRadius: "50%", border: `2px solid ${PALETTE.ink}`, background: "#fff", color: PALETTE.ink, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}><Icon name="arrowLeft" size={17} /></button>
-      <button onClick={() => onToggleFavorite(recipe.id)} className="rc-btn" aria-label="Preferita" style={{ position: "absolute", top: 12, right: 12, width: 38, height: 38, borderRadius: "50%", border: `2px solid ${PALETTE.ink}`, background: "#fff", color: isFavorite ? PALETTE.tomato : PALETTE.inkSoft, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 22 }}>{isFavorite ? "♥" : "♡"}</button>
+      <div style={{ position:"absolute", top:12, right:12, display:"flex", gap:7 }}>
+        <button onClick={onEdit} className="rc-btn" aria-label="Modifica ricetta" style={{ width:38, height:38, borderRadius:"50%", border:`2px solid ${PALETTE.ink}`, background:"#fff", color:PALETTE.ink, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer" }}><Icon name="pencil" size={16}/></button>
+        <button onClick={() => onToggleFavorite(recipe.id)} className="rc-btn" aria-label="Preferita" style={{ width: 38, height: 38, borderRadius: "50%", border: `2px solid ${PALETTE.ink}`, background: "#fff", color: isFavorite ? PALETTE.tomato : PALETTE.inkSoft, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 22 }}>{isFavorite ? "♥" : "♡"}</button>
+      </div>
+      <label className="rc-btn" style={{ position:"absolute", left:12, bottom:12, display:"inline-flex", alignItems:"center", gap:6, padding:"8px 11px", borderRadius:13, border:`2px solid ${PALETTE.ink}`, background:"rgba(255,255,255,.95)", color:PALETTE.ink, fontSize:11, fontWeight:800, cursor:"pointer", boxShadow:"3px 3px 0 rgba(42,29,16,.55)" }}>
+        <Icon name="image" size={14}/> {recipe.photos.length ? "Cambia copertina" : "Aggiungi copertina"}
+        <input type="file" accept="image/*" style={{display:"none"}} onChange={(e)=>{ const f=e.target.files?.[0]; if(!f) return; const r=new FileReader(); r.onload=()=>onAddPhoto(r.result, true); r.readAsDataURL(f); e.target.value=""; }} />
+      </label>
     </div>
     <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}><div><h2 className="rc-display" style={{ fontSize: 29, fontWeight: 700, color: PALETTE.ink, margin: "0 0 3px" }}>{recipe.title}</h2><p className="rc-display-i" style={{ fontSize: 15, color: PALETTE.inkSoft, margin: 0 }}>{recipe.subtitle || "Una ricetta da tenere a portata di mano."}</p></div><span style={{ flexShrink: 0, fontSize: 10, fontWeight: 800, color: "#fff", background: color, padding: "6px 9px", borderRadius: 12, border: `2px solid ${PALETTE.ink}` }}>{(CATEGORIES.find(c => c.id === recipe.category)?.label || recipe.category).toUpperCase()}</span></div>
     <div className="rc-detail-meta" style={{ margin: "16px 0" }}><div style={{ background: PALETTE.card, border: `2px solid ${PALETTE.ink}`, borderRadius: 14, padding: "10px 12px" }}><div style={{ fontSize: 10, color: PALETTE.inkSoft, fontWeight: 800 }}>TEMPO</div><div style={{ fontSize: 15, color: PALETTE.ink, fontWeight: 800, marginTop: 3 }}>{recipe.time || "—"}</div></div><div style={{ background: PALETTE.card, border: `2px solid ${PALETTE.ink}`, borderRadius: 14, padding: "10px 12px" }}><div style={{ fontSize: 10, color: PALETTE.inkSoft, fontWeight: 800 }}>PORZIONI</div><div style={{ fontSize: 15, color: PALETTE.ink, fontWeight: 800, marginTop: 3 }}>{servings}</div></div><div style={{ background: PALETTE.card, border: `2px solid ${PALETTE.ink}`, borderRadius: 14, padding: "10px 12px" }}><div style={{ fontSize: 10, color: PALETTE.inkSoft, fontWeight: 800 }}>TAG</div><div style={{ fontSize: 12, color: PALETTE.ink, fontWeight: 800, marginTop: 3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{recipe.tags.join(" · ") || "—"}</div></div></div>
@@ -630,7 +643,7 @@ function RecipeDetail({ recipe, onBack, onAddPhoto, isFavorite, onToggleFavorite
     <div style={{ position: "relative", display: "flex", background: PALETTE.card, borderRadius: 24, padding: 4, marginBottom: 20, border: `2px solid ${PALETTE.ink}` }}><div style={{ position: "absolute", top: 4, bottom: 4, left: 4, width: `calc((100% - 8px) / 3)`, borderRadius: 20, background: color, transform: `translateX(${tabIdx * 100}%)`, transition: "transform .3s cubic-bezier(.3,1,.4,1)" }} />{tabs.map(t => <button key={t.id} onClick={() => setTab(t.id)} style={{ position: "relative", flex: 1, fontSize: 13, padding: "8px 6px", borderRadius: 20, border: "none", background: "transparent", color: tab === t.id ? "#fff" : PALETTE.inkSoft, cursor: "pointer", fontWeight: 700, zIndex: 1 }}>{t.label}</button>)}</div>
     {tab === "ingredienti" && <><div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: PALETTE.basilSoft, borderRadius: 14, padding: "11px 16px", marginBottom: 18, border: `2px solid ${PALETTE.ink}` }}><span style={{ fontSize: 13, color: PALETTE.basilDeep, fontWeight: 700 }}>Persone</span><div style={{ display: "flex", alignItems: "center", gap: 14 }}><button onClick={() => scaleServings(-1)} className="rc-btn" style={{ width: 28, height: 28, borderRadius: "50%", border: `2px solid ${PALETTE.ink}`, background: PALETTE.card, cursor: "pointer" }}>−</button><span className="rc-display" style={{ fontSize: 17, fontWeight: 700, minWidth: 16, textAlign: "center" }}>{servings}</span><button onClick={() => scaleServings(1)} className="rc-btn" style={{ width: 28, height: 28, borderRadius: "50%", border: `2px solid ${PALETTE.ink}`, background: PALETTE.card, cursor: "pointer" }}>+</button></div></div><p style={{ fontSize: 12, color: PALETTE.inkSoft, margin: "0 0 8px" }}>Modifica un ingrediente e gli altri si aggiornano da soli. Blocca quelli che non vuoi scalare.</p><div className="rc-detail-layout"><section><h3 className="rc-display" style={{ margin: "0 0 8px", fontSize: 20 }}>Ingredienti</h3><div>{ingredients.map((ing, idx) => <IngredientRow key={ing.id} ing={ing} idx={idx} onChange={handleAmountChange} onToggleLock={toggleLock} />)}</div></section><section><h3 className="rc-display" style={{ margin: "0 0 8px", fontSize: 20 }}>Passaggi</h3><StepsView steps={recipe.steps} /></section></div></>}
     {tab === "passaggi" && <StepsView steps={recipe.steps} />}
-    {tab === "foto" && <PhotosView photos={recipe.photos} onAdd={url => onAddPhoto(recipe.id, url)} />}
+    {tab === "foto" && <PhotosView photos={recipe.photos} onAdd={url => onAddPhoto(recipe.id, url, false)} onSetCover={i => onSetCover(recipe.id, i)} onDeletePhoto={i => onDeletePhoto(recipe.id, i)} />}
   </div>{cookMode && <CookMode recipe={recipe} onClose={() => setCookMode(false)} />}</>);
 }
 
@@ -740,20 +753,21 @@ function parseRicetteFile(testo) {
   return ricette;
 }
 
-function AddRecipePanel({ onClose, onSave, onSaveMany }) {
+function AddRecipePanel({ onClose, onSave, onSaveMany, initialRecipe = null, onUpdate = null }) {
   const [mode, setMode] = useState("manuale");
+  const editing = Boolean(initialRecipe);
   const [fileText, setFileText] = useState("");
   const [importMsg, setImportMsg] = useState("");
   const fileRef = useRef(null);
-  const [title, setTitle] = useState("");
-  const [subtitle, setSubtitle] = useState("");
-  const [time, setTime] = useState("");
-  const [baseServings, setBaseServings] = useState(4);
-  const [category, setCategory] = useState("primi");
-  const [tagsText, setTagsText] = useState("");
-  const [cover, setCover] = useState("culurgiones");
-  const [ingredients, setIngredients] = useState([{ name: "", amount: "", unit: "" }]);
-  const [steps, setSteps] = useState([{ text: "", minutes: "" }]);
+  const [title, setTitle] = useState(initialRecipe?.title || "");
+  const [subtitle, setSubtitle] = useState(initialRecipe?.subtitle || "");
+  const [time, setTime] = useState(initialRecipe?.time || "");
+  const [baseServings, setBaseServings] = useState(initialRecipe?.baseServings || 4);
+  const [category, setCategory] = useState(initialRecipe?.category || "primi");
+  const [tagsText, setTagsText] = useState((initialRecipe?.tags || []).join(", "));
+  const [cover, setCover] = useState(initialRecipe?.cover || "culurgiones");
+  const [ingredients, setIngredients] = useState(initialRecipe?.ingredients?.map(({id,locked,...ing}) => ({...ing})) || [{ name: "", amount: "", unit: "" }]);
+  const [steps, setSteps] = useState(initialRecipe?.steps?.map(s => ({ text:s.text || "", minutes:s.seconds ? Math.round(s.seconds/60) : "" })) || [{ text: "", minutes: "" }]);
   const [error, setError] = useState("");
 
   function updateIng(i, field, value) { setIngredients((prev) => prev.map((row, idx) => (idx === i ? { ...row, [field]: value } : row))); }
@@ -770,12 +784,13 @@ function AddRecipePanel({ onClose, onSave, onSaveMany }) {
     if (cleanIngredients.length === 0) { setError("Aggiungi almeno un ingrediente."); return; }
     if (cleanSteps.length === 0) { setError("Aggiungi almeno un passaggio."); return; }
     setError("");
-    onSave({
+    const payload = {
       title: title.trim(), subtitle: subtitle.trim(), time: time.trim(), baseServings: parseInt(baseServings, 10) || 4, category, cover,
       tags: tagsText.split(",").map((t) => t.trim()).filter(Boolean),
       ingredients: cleanIngredients.map((r) => ({ name: r.name.trim(), amount: parseFloat(r.amount) || 0, unit: r.unit.trim() || null })),
       steps: cleanSteps.map((r) => ({ text: r.text.trim(), seconds: r.minutes ? parseInt(r.minutes, 10) * 60 : null })),
-    });
+    };
+    if (editing) onUpdate(payload); else onSave(payload);
   }
 
   const inputStyle = { width: "100%", height: 38, border: `2px solid ${PALETTE.ink}`, borderRadius: 10, background: PALETTE.card, padding: "0 12px", fontSize: 13, color: PALETTE.ink, boxSizing: "border-box" };
@@ -808,7 +823,7 @@ function AddRecipePanel({ onClose, onSave, onSaveMany }) {
       <button onClick={onClose} className="rc-btn" style={{ alignSelf: "flex-start", display: "flex", alignItems: "center", gap: 6, background: "transparent", border: "none", color: PALETTE.inkSoft, fontSize: 13, padding: "6px 0", cursor: "pointer" }}>
         <Icon name="arrowLeft" size={15} /> Ricette
       </button>
-      <h2 className="rc-display" style={{ fontSize: 22, fontWeight: 700, color: PALETTE.ink, margin: 0 }}>Nuova ricetta</h2>
+      <h2 className="rc-display" style={{ fontSize: 22, fontWeight: 700, color: PALETTE.ink, margin: 0 }}>{editing ? "Modifica ricetta" : "Nuova ricetta"}</h2>
 
       <div style={{ display: "flex", gap: 8 }}>
         {[{ id: "manuale", label: "Scrivi a mano" }, { id: "file", label: "Importa da file" }].map((t) => (
@@ -888,7 +903,7 @@ function AddRecipePanel({ onClose, onSave, onSaveMany }) {
       </div>
 
       {error && <p style={{ fontSize: 12, color: PALETTE.tomato, margin: 0, fontWeight: 600 }}>{error}</p>}
-      <button onClick={save} className="rc-btn" style={{ fontSize: 14, padding: "12px 16px", borderRadius: 14, border: `2.5px solid ${PALETTE.ink}`, background: PALETTE.tomato, color: "#fff", cursor: "pointer", fontWeight: 700, boxShadow: `3px 3px 0 ${PALETTE.ink}` }}>Salva nel ricettario</button>
+      <button onClick={save} className="rc-btn" style={{ fontSize: 14, padding: "12px 16px", borderRadius: 14, border: `2.5px solid ${PALETTE.ink}`, background: PALETTE.tomato, color: "#fff", cursor: "pointer", fontWeight: 700, boxShadow: `3px 3px 0 ${PALETTE.ink}` }}>{editing ? "Salva modifiche" : "Salva nel ricettario"}</button>
         </>
       )}
     </div>
@@ -946,6 +961,7 @@ export default function App() {
   const [view, setView] = useState("list");
   const [tab, setTab] = useState("ricette");
   const [selectedId, setSelectedId] = useState(null);
+  const [editingRecipeId, setEditingRecipeId] = useState(null);
   const [sharedWith, setSharedWith] = useState("");
   const [openCategory, setOpenCategory] = useState(null);
   const [query, setQuery] = useState("");
@@ -1039,12 +1055,35 @@ export default function App() {
   function openRecipe(r) { setSelectedId(r.id); setView("detail"); }
   function backToList() { setView("list"); setSelectedId(null); }
 
-  async function addPhoto(recipeId, url) {
+  async function persistPhotos(recipeId, nextPhotos) {
+    const { error } = await supabase.from("recipes").update({ photos: nextPhotos }).eq("id", recipeId);
+    if (error) { setLoadError("Non riesco a salvare la foto: " + error.message); return false; }
+    return true;
+  }
+
+  async function addPhoto(recipeId, url, asCover = false) {
     const recipe = recipes.find((r) => r.id === recipeId);
     if (!recipe) return;
-    const nextPhotos = [...recipe.photos, url];
+    const nextPhotos = asCover ? [url, ...recipe.photos.filter(p => p !== url)] : [...recipe.photos, url];
+    if (!(await persistPhotos(recipeId, nextPhotos))) return;
     setRecipes((prev) => prev.map((r) => (r.id === recipeId ? { ...r, photos: nextPhotos } : r)));
-    await supabase.from("recipes").update({ photos: nextPhotos }).eq("id", recipeId);
+  }
+
+  async function setPhotoAsCover(recipeId, index) {
+    const recipe = recipes.find(r => r.id === recipeId);
+    if (!recipe || index <= 0 || !recipe.photos[index]) return;
+    const nextPhotos = [recipe.photos[index], ...recipe.photos.filter((_, i) => i !== index)];
+    if (!(await persistPhotos(recipeId, nextPhotos))) return;
+    setRecipes(prev => prev.map(r => r.id === recipeId ? { ...r, photos: nextPhotos } : r));
+  }
+
+  async function deletePhoto(recipeId, index) {
+    const recipe = recipes.find(r => r.id === recipeId);
+    if (!recipe || !recipe.photos[index]) return;
+    if (!window.confirm("Eliminare questa foto?")) return;
+    const nextPhotos = recipe.photos.filter((_, i) => i !== index);
+    if (!(await persistPhotos(recipeId, nextPhotos))) return;
+    setRecipes(prev => prev.map(r => r.id === recipeId ? { ...r, photos: nextPhotos } : r));
   }
 
   async function saveNewRecipe(data) {
@@ -1059,6 +1098,18 @@ export default function App() {
     if (error || !inserted) { setLoadError(error?.message || "Non riesco a salvare la ricetta."); return; }
     setRecipes((prev) => [rowToRecipe(inserted), ...prev]);
     setView("list");
+  }
+
+  async function updateRecipe(recipeId, data) {
+    const { data: updated, error } = await supabase.from("recipes").update({
+      title: data.title, subtitle: data.subtitle, time: data.time, base_servings: data.baseServings,
+      category: data.category, cover: data.cover, tags: data.tags, ingredients: data.ingredients, steps: data.steps,
+    }).eq("id", recipeId).select().single();
+    if (error || !updated) { setLoadError(error?.message || "Non riesco a salvare le modifiche."); return; }
+    setRecipes(prev => prev.map(r => r.id === recipeId ? rowToRecipe({ ...updated, photos: r.photos }) : r));
+    setEditingRecipeId(null);
+    setSelectedId(recipeId);
+    setView("detail");
   }
 
   async function saveManyRecipes(lista) {
@@ -1145,7 +1196,8 @@ export default function App() {
         )}
 
         {view === "add" && <AddRecipePanel onClose={() => setView("list")} onSave={saveNewRecipe} onSaveMany={saveManyRecipes} />}
-        {view === "detail" && selected && <RecipeDetail recipe={selected} onBack={backToList} onAddPhoto={addPhoto} isFavorite={favorites.includes(selected.id)} onToggleFavorite={toggleFavorite}/>}
+        {view === "detail" && selected && !editingRecipeId && <RecipeDetail recipe={selected} onBack={backToList} onAddPhoto={(id,url,cover)=>addPhoto(id,url,cover)} onSetCover={setPhotoAsCover} onDeletePhoto={deletePhoto} onEdit={() => setEditingRecipeId(selected.id)} isFavorite={favorites.includes(selected.id)} onToggleFavorite={toggleFavorite}/>}
+        {view === "detail" && selected && editingRecipeId === selected.id && <AddRecipePanel initialRecipe={selected} onClose={() => setEditingRecipeId(null)} onUpdate={(data) => updateRecipe(selected.id, data)} onSave={saveNewRecipe} onSaveMany={saveManyRecipes} />}
 
         {tab === "chat" && view === "list" && (
           <>
