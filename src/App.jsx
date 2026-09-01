@@ -816,6 +816,8 @@ function AddRecipePanel({ onClose, onSave, onSaveMany, initialRecipe = null, onU
   const [steps, setSteps] = useState(initialRecipe?.steps?.map(s => ({ text:s.text || "", minutes:s.seconds ? Math.round(s.seconds/60) : "" })) || [{ text: "", minutes: "" }]);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [debug, setDebug] = useState("Pannello pronto — in attesa di Salva modifiche");
+  function dbg(msg) { setDebug(msg); console.log("[RICETTARIO DEBUG]", msg); }
 
   function updateIng(i, field, value) { setIngredients((prev) => prev.map((row, idx) => (idx === i ? { ...row, [field]: value } : row))); }
   function addIng() { setIngredients((prev) => [...prev, { name: "", amount: "", unit: "" }]); }
@@ -825,11 +827,14 @@ function AddRecipePanel({ onClose, onSave, onSaveMany, initialRecipe = null, onU
   function removeStep(i) { setSteps((prev) => prev.filter((_, idx) => idx !== i)); }
 
   async function save() {
+    dbg("1/6 CLICK ricevuto");
     if (!title.trim()) { setError("Dai un titolo alla ricetta."); return; }
+    dbg("2/6 Titolo valido");
     const cleanIngredients = ingredients.filter((r) => r.name.trim());
     const cleanSteps = steps.filter((r) => r.text.trim());
     if (cleanIngredients.length === 0) { setError("Aggiungi almeno un ingrediente."); return; }
     if (cleanSteps.length === 0) { setError("Aggiungi almeno un passaggio."); return; }
+    dbg("3/6 Validazione superata");
     setError("");
     const payload = {
       title: title.trim(), subtitle: subtitle.trim(), time: time.trim(), baseServings: parseInt(baseServings, 10) || 4, category, cover,
@@ -838,14 +843,17 @@ function AddRecipePanel({ onClose, onSave, onSaveMany, initialRecipe = null, onU
       steps: cleanSteps.map((r) => ({ text: r.text.trim(), seconds: r.minutes ? parseInt(r.minutes, 10) * 60 : null })),
     };
     setSaving(true);
+    dbg(editing ? "4/6 Chiamo onUpdate()" : "4/6 Chiamo onSave()");
     try {
       const result = editing ? await onUpdate(payload) : await onSave(payload);
+      dbg(`5/6 onUpdate/onSave ha risposto: ${JSON.stringify(result)}`);
       if (result && result.ok === false) setError(result.error || "Non riesco a salvare le modifiche.");
       else if (result === false) setError("Non riesco a salvare le modifiche.");
-      else if (editing) setError("Salvataggio completato.");
+      else if (editing) { setError(""); dbg("6/6 SALVATAGGIO COMPLETATO"); }
     } catch (e) {
+      dbg(`ERRORE nel salvataggio: ${e?.message || String(e)}`);
       setError(`Errore durante il salvataggio: ${e?.message || String(e)}`);
-    } finally { setSaving(false); }
+    } finally { setSaving(false); dbg("Fine handler Salva"); }
   }
 
   const inputStyle = { width: "100%", height: 38, border: `2px solid ${PALETTE.ink}`, borderRadius: 10, background: PALETTE.card, padding: "0 12px", fontSize: 13, color: PALETTE.ink, boxSizing: "border-box" };
@@ -957,6 +965,7 @@ function AddRecipePanel({ onClose, onSave, onSaveMany, initialRecipe = null, onU
         <button onClick={addStep} className="rc-btn" style={{ marginTop: 8, fontSize: 12, padding: "7px 12px", borderRadius: 10, border: `2px dashed ${PALETTE.border}`, background: "transparent", color: PALETTE.inkSoft, cursor: "pointer", fontWeight: 600 }}>+ Aggiungi passaggio</button>
       </div>
 
+      <div style={{ fontSize: 11, color: PALETTE.inkSoft, background: PALETTE.card, border:`1px dashed ${PALETTE.border}`, borderRadius:10, padding:"8px 10px" }}>DEBUG: {debug}</div>
       {error && <p style={{ fontSize: 12, color: PALETTE.tomato, margin: 0, fontWeight: 700, background:PALETTE.tomatoSoft, border:`1px solid ${PALETTE.tomato}`, borderRadius:10, padding:10 }}>{error}</p>}
       <button type="button" disabled={saving} onClick={save} className="rc-btn" style={{ fontSize: 14, padding: "12px 16px", borderRadius: 14, border: `2.5px solid ${PALETTE.ink}`, background: PALETTE.tomato, color: "#fff", cursor: "pointer", fontWeight: 700, boxShadow: `3px 3px 0 ${PALETTE.ink}` }}>{saving ? "Salvataggio…" : (editing ? "Salva modifiche" : "Salva nel ricettario")}</button>
         </>
@@ -1171,6 +1180,7 @@ export default function App() {
   }
 
   async function updateRecipe(recipeId, data) {
+    console.log("[RICETTARIO DEBUG] updateRecipe START", recipeId, data);
     const current = recipes.find(r => String(r.id) === String(recipeId));
     if (!current) return { ok:false, error:"Ricetta non trovata." };
 
@@ -1192,11 +1202,13 @@ export default function App() {
     }
 
     setLoadError("");
+    console.log("[RICETTARIO DEBUG] UPDATE Supabase INVIATO", updatePayload);
     const { error: updateError } = await supabase
       .from("recipes")
       .update(updatePayload)
       .eq("id", recipeId);
 
+    console.log("[RICETTARIO DEBUG] UPDATE risposta", updateError);
     if (updateError) {
       const msg = `Salvataggio non riuscito: ${updateError.message || "errore Supabase"}`;
       setLoadError(msg);
@@ -1205,6 +1217,7 @@ export default function App() {
 
     // Verifica reale del valore persistito usando la SELECT che già funziona
     // per il caricamento iniziale dell'app.
+    console.log("[RICETTARIO DEBUG] UPDATE OK, verifico SELECT");
     const { data: verified, error: verifyError } = await supabase
       .from("recipes")
       .select("*")
@@ -1217,6 +1230,7 @@ export default function App() {
       return { ok:false, error:msg };
     }
 
+    console.log("[RICETTARIO DEBUG] VERIFY risposta", verified, verifyError);
     const nextRecipe = rowToRecipe(verified);
     setRecipes(prev => prev.map(r => String(r.id) === String(recipeId) ? nextRecipe : r));
     setSelectedId(nextRecipe.id);
@@ -1311,7 +1325,7 @@ export default function App() {
 
         {view === "add" && <AddRecipePanel onClose={() => setView("list")} onSave={saveNewRecipe} onSaveMany={saveManyRecipes} />}
         {view === "detail" && selected && !editingRecipeId && <RecipeDetail recipe={selected} onBack={backToList} onAddPhoto={(id,url,cover)=>addPhoto(id,url,cover)} onSetCover={setPhotoAsCover} onDeletePhoto={deletePhoto} onEdit={() => setEditingRecipeId(selected.id)} isFavorite={favorites.includes(selected.id)} onToggleFavorite={toggleFavorite}/>}
-        {view === "detail" && selected && editingRecipeId === selected.id && <AddRecipePanel initialRecipe={selected} onClose={() => setEditingRecipeId(null)} onUpdate={(data) => updateRecipe(selected.id, data)} onSave={saveNewRecipe} onSaveMany={saveManyRecipes} />}
+        {view === "detail" && selected && editingRecipeId === selected.id && <AddRecipePanel initialRecipe={selected} onClose={() => setEditingRecipeId(null)} onUpdate={(data) => { console.log("[RICETTARIO DEBUG] parent onUpdate wrapper", selected.id); return updateRecipe(selected.id, data); }} onSave={saveNewRecipe} onSaveMany={saveManyRecipes} />}
 
         {tab === "chat" && view === "list" && (
           <>
